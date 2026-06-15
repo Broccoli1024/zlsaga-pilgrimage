@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { Spot } from "../types";
 
 interface RouteState {
@@ -12,13 +13,14 @@ interface RouteState {
 export default function RouteResultPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const state = location.state as RouteState | null;
 
   if (!state) {
     return (
       <div style={{ padding: "2rem" }}>
-        <p>ルートデータが見つかりません。</p>
-        <button onClick={() => navigate("/")}>地図に戻る</button>
+        <p>{t("result.noData")}</p>
+        <button onClick={() => navigate("/")}>{t("result.backToMap")}</button>
       </div>
     );
   }
@@ -29,9 +31,10 @@ export default function RouteResultPage() {
 
   return (
     <div style={{ padding: "2rem", maxWidth: "480px", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "20px", marginBottom: "0.5rem" }}>提案ルート</h1>
+      <h1 style={{ fontSize: "20px", marginBottom: "0.5rem" }}>
+        {t("result.title")}
+      </h1>
 
-      {/* 時間サマリー */}
       <div
         style={{
           padding: "12px",
@@ -41,27 +44,26 @@ export default function RouteResultPage() {
           fontSize: "14px",
         }}
       >
+        <p style={{ margin: "0 0 4px" }}>{t(`route.${transportMode}`)}</p>
         <p style={{ margin: "0 0 4px" }}>
-          {transportMode === "car" ? "🚗 自動車" : "🚃 公共交通機関"}
-        </p>
-        <p style={{ margin: "0 0 4px" }}>
-          合計時間：
+          {t("result.totalTime")}：
           <strong>
-            {Math.floor(totalMin / 60)}時間{totalMin % 60}分
+            {Math.floor(totalMin / 60)}
+            {t("route.hours")}
+            {totalMin % 60}
+            {t("route.minutes")}
           </strong>
           {isOverTime && (
             <span style={{ color: "#f44336", marginLeft: "8px" }}>
-              ⚠️ 利用可能時間（{Math.floor(availableMinutes / 60)}
-              時間）を超えています
+              ⚠️ {t("result.overTime")}（{Math.floor(availableMinutes / 60)}
+              {t("route.hours")}）
             </span>
           )}
         </p>
       </div>
 
-      {/* ルート詳細 */}
       {spots.map((spot, i) => (
         <div key={spot.id}>
-          {/* 移動時間 */}
           {i > 0 && (
             <div
               style={{
@@ -70,12 +72,11 @@ export default function RouteResultPage() {
                 color: "#999",
               }}
             >
-              {transportMode === "car" ? "🚗" : "🚃"} 約
-              {travelTimes[`${spots[i - 1].id}_${spot.id}`] ?? "?"}分
+              {t(`route.${transportMode}`)} {t("result.travelTime")}
+              {travelTimes[`${spots[i - 1].id}_${spot.id}`] ?? "?"}
+              {t("route.minutes")}
             </div>
           )}
-
-          {/* スポットカード */}
           <div
             style={{
               padding: "12px",
@@ -115,7 +116,9 @@ export default function RouteResultPage() {
                   {spot.name}
                 </p>
                 <p style={{ margin: 0, fontSize: "12px", color: "#999" }}>
-                  滞在目安：約{spot.duration_min ?? 30}分
+                  {t("result.stayTime")}
+                  {spot.duration_min ?? 30}
+                  {t("route.minutes")}
                 </p>
               </div>
             </div>
@@ -138,7 +141,7 @@ export default function RouteResultPage() {
             cursor: "pointer",
           }}
         >
-          ← 条件を変更
+          {t("result.changeCondition")}
         </button>
         <button
           onClick={() => navigate("/")}
@@ -152,7 +155,7 @@ export default function RouteResultPage() {
             cursor: "pointer",
           }}
         >
-          地図に戻る
+          {t("result.backToMap")}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
 import type { Spot } from "../types";
@@ -9,6 +10,7 @@ type TransportMode = "car" | "transit";
 export default function RouteNewPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
 
   const [spots, setSpots] = useState<Spot[]>([]);
@@ -17,7 +19,6 @@ export default function RouteNewPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // URLパラメータからスポットIDを取得
   const spotIds = searchParams.get("spots")?.split(",") ?? [];
 
   useEffect(() => {
@@ -31,7 +32,6 @@ export default function RouteNewPage() {
         console.error("スポット取得エラー:", error);
         return;
       }
-      // URLパラメータの順序を保持
       const ordered = spotIds
         .map((id) => data?.find((s) => s.id === id))
         .filter(Boolean) as Spot[];
@@ -43,20 +43,15 @@ export default function RouteNewPage() {
   const handleGenerateRoute = async () => {
     if (!user) return;
     if (spots.length < 2) {
-      setError("スポットを2件以上選択してください");
+      setError(t("route.needMoreSpots"));
       return;
     }
     setLoading(true);
     setError(null);
 
     try {
-      // Mapbox Directions APIで移動時間を取得
       const travelTimes = await fetchTravelTimes(spots, transportMode);
-
-      // Greedy法でルートを最適化
       const optimizedSpots = optimizeRoute(spots, travelTimes);
-
-      // 合計時間を計算
       const totalTravelMin = optimizedSpots.reduce(
         (sum, _, i) =>
           i === 0
@@ -73,7 +68,6 @@ export default function RouteNewPage() {
       );
       const totalMin = totalTravelMin + totalStayMin;
 
-      // ルートをDBに保存
       const { data: routeData, error: routeError } = await supabase
         .from("routes")
         .insert({
@@ -83,10 +77,8 @@ export default function RouteNewPage() {
         })
         .select()
         .single();
-
       if (routeError) throw routeError;
 
-      // ルート内スポットを保存
       const routeSpots = optimizedSpots.map((spot, i) => ({
         route_id: routeData.id,
         spot_id: spot.id,
@@ -100,10 +92,8 @@ export default function RouteNewPage() {
       const { error: routeSpotsError } = await supabase
         .from("route_spots")
         .insert(routeSpots);
-
       if (routeSpotsError) throw routeSpotsError;
 
-      // travel_timesにキャッシュ保存
       const cacheData = Object.entries(travelTimes).map(([key, minutes]) => {
         const [from, to] = key.split("_");
         return {
@@ -118,12 +108,13 @@ export default function RouteNewPage() {
         };
       });
 
-      await supabase.from("travel_times").upsert(cacheData, {
-        onConflict:
-          "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
-      });
+      await supabase
+        .from("travel_times")
+        .upsert(cacheData, {
+          onConflict:
+            "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
+        });
 
-      // 結果ページへ（一旦マイページへ）
       navigate(`/routes/${routeData.id}`, {
         state: {
           spots: optimizedSpots,
@@ -135,7 +126,7 @@ export default function RouteNewPage() {
       });
     } catch (err) {
       console.error("ルート生成エラー:", err);
-      setError("ルートの生成に失敗しました。もう一度お試しください。");
+      setError(t("route.error"));
     }
     setLoading(false);
   };
@@ -146,15 +137,16 @@ export default function RouteNewPage() {
         onClick={() => navigate("/")}
         style={{ marginBottom: "1rem", cursor: "pointer" }}
       >
-        ← 地図に戻る
+        {t("route.backToMap")}
       </button>
 
-      <h1 style={{ fontSize: "20px", marginBottom: "1.5rem" }}>ルートを作成</h1>
+      <h1 style={{ fontSize: "20px", marginBottom: "1.5rem" }}>
+        {t("route.title")}
+      </h1>
 
-      {/* 選択スポット一覧 */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ fontSize: "16px", marginBottom: "8px" }}>
-          選択したスポット
+          {t("route.selectedSpots")}
         </h2>
         {spots.map((spot, i) => (
           <div
@@ -175,15 +167,18 @@ export default function RouteNewPage() {
             </span>
             <span style={{ flex: 1 }}>{spot.name}</span>
             <span style={{ color: "#999", fontSize: "12px" }}>
-              約{spot.duration_min ?? 30}分
+              {t("route.stayTime")}
+              {spot.duration_min ?? 30}
+              {t("route.minutes")}
             </span>
           </div>
         ))}
       </section>
 
-      {/* 移動手段 */}
       <section style={{ marginBottom: "1.5rem" }}>
-        <h2 style={{ fontSize: "16px", marginBottom: "8px" }}>移動手段</h2>
+        <h2 style={{ fontSize: "16px", marginBottom: "8px" }}>
+          {t("route.transport")}
+        </h2>
         <div style={{ display: "flex", gap: "8px" }}>
           {(["car", "transit"] as TransportMode[]).map((mode) => (
             <button
@@ -200,19 +195,21 @@ export default function RouteNewPage() {
                 fontSize: "14px",
               }}
             >
-              {mode === "car" ? "🚗 自動車" : "🚃 公共交通機関"}
+              {t(`route.${mode}`)}
             </button>
           ))}
         </div>
       </section>
 
-      {/* 利用可能時間 */}
       <section style={{ marginBottom: "1.5rem" }}>
         <h2 style={{ fontSize: "16px", marginBottom: "8px" }}>
-          利用可能時間：
+          {t("route.availableTime")}：
           <strong>
-            {Math.floor(availableMinutes / 60)}時間
-            {availableMinutes % 60 > 0 ? `${availableMinutes % 60}分` : ""}
+            {Math.floor(availableMinutes / 60)}
+            {t("route.hours")}
+            {availableMinutes % 60 > 0
+              ? `${availableMinutes % 60}${t("route.minutes")}`
+              : ""}
           </strong>
         </h2>
         <input
@@ -232,8 +229,8 @@ export default function RouteNewPage() {
             color: "#999",
           }}
         >
-          <span>1時間</span>
-          <span>10時間</span>
+          <span>1{t("route.hours")}</span>
+          <span>10{t("route.hours")}</span>
         </div>
       </section>
 
@@ -258,13 +255,12 @@ export default function RouteNewPage() {
           fontWeight: "bold",
         }}
       >
-        {loading ? "ルート生成中..." : "🗺️ ルートを生成"}
+        {loading ? t("route.generating") : t("route.generate")}
       </button>
     </div>
   );
 }
 
-// Mapbox Directions APIで移動時間を取得
 async function fetchTravelTimes(
   spots: Spot[],
   mode: TransportMode,
@@ -273,14 +269,12 @@ async function fetchTravelTimes(
   const profile = mode === "car" ? "driving" : "walking";
   const times: Record<string, number> = {};
 
-  // 全ペアの移動時間を取得
   for (let i = 0; i < spots.length; i++) {
     for (let j = 0; j < spots.length; j++) {
       if (i === j) continue;
       const from = spots[i];
       const to = spots[j];
       const key = `${from.id}_${to.id}`;
-
       const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?access_token=${token}`;
       const res = await fetch(url);
       const data = await res.json();
@@ -291,21 +285,18 @@ async function fetchTravelTimes(
   return times;
 }
 
-// Greedy法でルートを最適化（最近傍法）
 function optimizeRoute(
   spots: Spot[],
   travelTimes: Record<string, number>,
 ): Spot[] {
   if (spots.length <= 2) return spots;
-
   const unvisited = [...spots.slice(1)];
-  const result = [spots[0]]; // 最初のスポットを起点に固定
+  const result = [spots[0]];
 
   while (unvisited.length > 0) {
     const current = result[result.length - 1];
     let minTime = Infinity;
     let nearestIndex = 0;
-
     unvisited.forEach((spot, i) => {
       const time = travelTimes[`${current.id}_${spot.id}`] ?? Infinity;
       if (time < minTime) {
@@ -313,10 +304,8 @@ function optimizeRoute(
         nearestIndex = i;
       }
     });
-
     result.push(unvisited[nearestIndex]);
     unvisited.splice(nearestIndex, 1);
   }
-
   return result;
 }

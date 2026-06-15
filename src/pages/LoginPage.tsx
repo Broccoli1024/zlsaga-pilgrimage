@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
+import LangToggle from "../components/ui/LangToggle";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
@@ -21,7 +24,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message);
       } else {
-        setMessage("確認メールを送信しました。メールを確認してください。");
+        setMessage(t("login.confirmationSent"));
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
@@ -39,10 +42,20 @@ export default function LoginPage() {
 
   return (
     <div style={{ padding: "2rem", maxWidth: "400px", margin: "0 auto" }}>
-      <h1>{isSignUp ? "新規登録" : "ログイン"}</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "1rem",
+        }}
+      >
+        <LangToggle />
+      </div>
+
+      <h1>{isSignUp ? t("login.signupTitle") : t("login.title")}</h1>
 
       <div style={{ marginBottom: "1rem" }}>
-        <label>メールアドレス</label>
+        <label>{t("login.email")}</label>
         <input
           type="email"
           value={email}
@@ -57,7 +70,7 @@ export default function LoginPage() {
       </div>
 
       <div style={{ marginBottom: "1rem" }}>
-        <label>パスワード</label>
+        <label>{t("login.password")}</label>
         <input
           type="password"
           value={password}
@@ -79,14 +92,18 @@ export default function LoginPage() {
         disabled={loading}
         style={{ padding: "8px 24px", cursor: "pointer" }}
       >
-        {loading ? "処理中..." : isSignUp ? "登録" : "ログイン"}
+        {loading
+          ? t("login.processing")
+          : isSignUp
+            ? t("login.signupSubmit")
+            : t("login.submit")}
       </button>
 
       <p
         onClick={() => setIsSignUp(!isSignUp)}
         style={{ marginTop: "1rem", color: "blue", cursor: "pointer" }}
       >
-        {isSignUp ? "ログインはこちら" : "新規登録はこちら"}
+        {isSignUp ? t("login.toLogin") : t("login.toSignup")}
       </p>
     </div>
   );

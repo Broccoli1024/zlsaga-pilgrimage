@@ -4,17 +4,18 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
 import type { Spot } from "../types";
+import { useTranslation } from "react-i18next";
+import LangToggle from "../components/ui/LangToggle";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 export default function MapPage() {
+  const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [checkedInSpots, setCheckedInSpots] = useState<Set<string>>(new Set());
   const [checkingIn, setCheckingIn] = useState(false);
-
-  // ルート作成モード
   const [routeMode, setRouteMode] = useState(false);
   const [selectedForRoute, setSelectedForRoute] = useState<Spot[]>([]);
 
@@ -70,12 +71,7 @@ export default function MapPage() {
 
   const handleUnCheckin = async (spot: Spot) => {
     if (!user) return;
-    if (
-      !window.confirm(
-        `「${spot.name}」のチェックインを取り消しますか？\n※訪問履歴は記録として残ります`,
-      )
-    )
-      return;
+    if (!window.confirm(`「${spot.name}」${t("map.uncheckinConfirm")}`)) return;
     setCheckingIn(true);
     const { error } = await supabase
       .from("spot_checkins")
@@ -94,17 +90,11 @@ export default function MapPage() {
     setCheckingIn(false);
   };
 
-  // ルート作成モードでのピンタップ
   const handleMarkerClickForRoute = (spot: Spot) => {
     setSelectedForRoute((prev) => {
       const exists = prev.find((s) => s.id === spot.id);
-      if (exists) {
-        // 既に選択済みなら解除
-        return prev.filter((s) => s.id !== spot.id);
-      } else {
-        // 未選択なら追加
-        return [...prev, spot];
-      }
+      if (exists) return prev.filter((s) => s.id !== spot.id);
+      return [...prev, spot];
     });
   };
 
@@ -132,9 +122,13 @@ export default function MapPage() {
           borderRadius: "8px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
           fontSize: "14px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
         }}
       >
-        {user ? `👤 ${user.email}` : <a href="/login">ログイン</a>}
+        <LangToggle />
+        {user ? `👤 ${user.email}` : <a href="/login">{t("map.login")}</a>}
       </div>
 
       {/* ルート作成ボタン */}
@@ -167,10 +161,9 @@ export default function MapPage() {
               boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
             }}
           >
-            {routeMode ? "❌ キャンセル" : "🗺️ ルートを作成"}
+            {routeMode ? `❌ ${t("map.cancel")}` : `🗺️ ${t("map.createRoute")}`}
           </button>
 
-          {/* 選択済みスポット一覧 */}
           {routeMode && (
             <div
               style={{
@@ -188,11 +181,11 @@ export default function MapPage() {
                   fontSize: "13px",
                 }}
               >
-                選択中のスポット（{selectedForRoute.length}件）
+                {t("map.selectedSpots")}（{selectedForRoute.length}件）
               </p>
               {selectedForRoute.length === 0 && (
                 <p style={{ margin: 0, fontSize: "12px", color: "#999" }}>
-                  ピンをタップして選択
+                  {t("map.tapToSelect")}
                 </p>
               )}
               {selectedForRoute.map((spot, i) => (
@@ -220,7 +213,6 @@ export default function MapPage() {
               {selectedForRoute.length >= 2 && (
                 <button
                   onClick={() => {
-                    // 次のステップ（移動手段・時間入力）へ
                     const ids = selectedForRoute.map((s) => s.id).join(",");
                     window.location.href = `/routes/new?spots=${ids}`;
                   }}
@@ -235,7 +227,7 @@ export default function MapPage() {
                     cursor: "pointer",
                   }}
                 >
-                  次へ →
+                  {t("map.next")}
                 </button>
               )}
             </div>
@@ -304,7 +296,9 @@ export default function MapPage() {
                       borderRadius: "4px",
                     }}
                   >
-                    {checkingIn ? "処理中..." : "✅ チェックイン取り消し"}
+                    {checkingIn
+                      ? t("map.processing")
+                      : `✅ ${t("map.uncheckin")}`}
                   </button>
                 ) : (
                   <button
@@ -321,14 +315,14 @@ export default function MapPage() {
                       borderRadius: "4px",
                     }}
                   >
-                    {checkingIn ? "記録中..." : "📍 チェックイン"}
+                    {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
                   </button>
                 ))}
               {!user && (
                 <p
                   style={{ fontSize: "11px", color: "#999", marginTop: "8px" }}
                 >
-                  チェックインにはログインが必要です
+                  {t("map.loginRequired")}
                 </p>
               )}
             </div>

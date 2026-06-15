@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "Zombie Land Saga Pilgrimage"
+  },
+  "map": {
+    "login": "Login",
+    "createRoute": "Create Route",
+    "cancel": "Cancel",
+    "selectedSpots": "Selected Spots",
+    "tapToSelect": "Tap a pin to select",
+    "next": "Next →",
+    "checkin": "Check In",
+    "uncheckin": "Undo Check-In",
+    "processing": "Processing...",
+    "recording": "Recording...",
+    "visited": "Visited",
+    "loginRequired": "Login required to check in",
+    "uncheckinConfirm": ": Undo check-in?\n※Visit history will remain."
+  },
+  "login": {
+    "title": "Login",
+    "signupTitle": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Login",
+    "signupSubmit": "Sign Up",
+    "processing": "Processing...",
+    "toSignup": "Create an account",
+    "toLogin": "Already have an account?",
+    "confirmationSent": "Confirmation email sent. Please check your inbox."
+  },
+  "route": {
+    "title": "Create Route",
+    "backToMap": "← Back to Map",
+    "selectedSpots": "Selected Spots",
+    "transport": "Transport",
+    "car": "🚗 Car",
+    "transit": "🚃 Public Transit",
+    "availableTime": "Available Time",
+    "hours": "h",
+    "minutes": "m",
+    "generate": "🗺️ Generate Route",
+    "generating": "Generating...",
+    "stayTime": "Stay: approx. ",
+    "error": "Failed to generate route. Please try again.",
+    "needMoreSpots": "Please select at least 2 spots."
+  },
+  "result": {
+    "title": "Suggested Route",
+    "totalTime": "Total Time",
+    "overTime": "Exceeds available time",
+    "stayTime": "Stay: approx. ",
+    "changeCondition": "← Change Conditions",
+    "backToMap": "Back to Map",
+    "noData": "Route data not found.",
+    "travelTime": "approx. "
+  }
+}

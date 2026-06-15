@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "ゾンビランドサガ 聖地巡礼"
+  },
+  "map": {
+    "login": "ログイン",
+    "createRoute": "ルートを作成",
+    "cancel": "キャンセル",
+    "selectedSpots": "選択中のスポット",
+    "tapToSelect": "ピンをタップして選択",
+    "next": "次へ →",
+    "checkin": "チェックイン",
+    "uncheckin": "チェックイン取り消し",
+    "processing": "処理中...",
+    "recording": "記録中...",
+    "visited": "訪問済み",
+    "loginRequired": "チェックインにはログインが必要です",
+    "uncheckinConfirm": "のチェックインを取り消しますか？\n※訪問履歴は記録として残ります"
+  },
+  "login": {
+    "title": "ログイン",
+    "signupTitle": "新規登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "submit": "ログイン",
+    "signupSubmit": "登録",
+    "processing": "処理中...",
+    "toSignup": "新規登録はこちら",
+    "toLogin": "ログインはこちら",
+    "confirmationSent": "確認メールを送信しました。メールを確認してください。"
+  },
+  "route": {
+    "title": "ルートを作成",
+    "backToMap": "← 地図に戻る",
+    "selectedSpots": "選択したスポット",
+    "transport": "移動手段",
+    "car": "🚗 自動車",
+    "transit": "🚃 公共交通機関",
+    "availableTime": "利用可能時間",
+    "hours": "時間",
+    "minutes": "分",
+    "generate": "🗺️ ルートを生成",
+    "generating": "ルート生成中...",
+    "stayTime": "滞在目安：約",
+    "error": "ルートの生成に失敗しました。もう一度お試しください。",
+    "needMoreSpots": "スポットを2件以上選択してください"
+  },
+  "result": {
+    "title": "提案ルート",
+    "totalTime": "合計時間",
+    "overTime": "利用可能時間を超えています",
+    "stayTime": "滞在目安：約",
+    "changeCondition": "← 条件を変更",
+    "backToMap": "地図に戻る",
+    "noData": "ルートデータが見つかりません。",
+    "travelTime": "約"
+  }
+}
