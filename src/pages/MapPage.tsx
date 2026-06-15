@@ -14,6 +14,10 @@ export default function MapPage() {
   const [checkedInSpots, setCheckedInSpots] = useState<Set<string>>(new Set());
   const [checkingIn, setCheckingIn] = useState(false);
 
+  // ルート作成モード
+  const [routeMode, setRouteMode] = useState(false);
+  const [selectedForRoute, setSelectedForRoute] = useState<Spot[]>([]);
+
   useEffect(() => {
     const fetchSpots = async () => {
       const { data, error } = await supabase
@@ -47,19 +51,15 @@ export default function MapPage() {
   const handleCheckin = async (spot: Spot) => {
     if (!user) return;
     setCheckingIn(true);
-
-    await supabase.from("visit_logs").insert({
-      user_id: user.id,
-      spot_id: spot.id,
-    });
-
+    await supabase
+      .from("visit_logs")
+      .insert({ user_id: user.id, spot_id: spot.id });
     const { error } = await supabase
       .from("spot_checkins")
       .upsert(
         { user_id: user.id, spot_id: spot.id },
         { onConflict: "user_id,spot_id" },
       );
-
     if (error) {
       console.error("チェックインエラー:", error);
     } else {
@@ -77,13 +77,11 @@ export default function MapPage() {
     )
       return;
     setCheckingIn(true);
-
     const { error } = await supabase
       .from("spot_checkins")
       .delete()
       .eq("user_id", user.id)
       .eq("spot_id", spot.id);
-
     if (error) {
       console.error("チェックイン取り消しエラー:", error);
     } else {
@@ -96,8 +94,33 @@ export default function MapPage() {
     setCheckingIn(false);
   };
 
+  // ルート作成モードでのピンタップ
+  const handleMarkerClickForRoute = (spot: Spot) => {
+    setSelectedForRoute((prev) => {
+      const exists = prev.find((s) => s.id === spot.id);
+      if (exists) {
+        // 既に選択済みなら解除
+        return prev.filter((s) => s.id !== spot.id);
+      } else {
+        // 未選択なら追加
+        return [...prev, spot];
+      }
+    });
+  };
+
+  const getMarkerEmoji = (spot: Spot) => {
+    if (routeMode) {
+      const index = selectedForRoute.findIndex((s) => s.id === spot.id);
+      if (index !== -1) return `${index + 1}️⃣`;
+      return "⚪";
+    }
+    if (checkedInSpots.has(spot.id)) return "✅";
+    return spot.is_sacred ? "📍" : "🗺️";
+  };
+
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
+      {/* ヘッダー */}
       <div
         style={{
           position: "absolute",
@@ -114,6 +137,112 @@ export default function MapPage() {
         {user ? `👤 ${user.email}` : <a href="/login">ログイン</a>}
       </div>
 
+      {/* ルート作成ボタン */}
+      {user && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            zIndex: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <button
+            onClick={() => {
+              setRouteMode(!routeMode);
+              setSelectedForRoute([]);
+              setSelectedSpot(null);
+            }}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "8px",
+              border: "none",
+              background: routeMode ? "#f44336" : "#2196F3",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: "bold",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            }}
+          >
+            {routeMode ? "❌ キャンセル" : "🗺️ ルートを作成"}
+          </button>
+
+          {/* 選択済みスポット一覧 */}
+          {routeMode && (
+            <div
+              style={{
+                background: "white",
+                borderRadius: "8px",
+                padding: "12px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                minWidth: "200px",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 8px",
+                  fontWeight: "bold",
+                  fontSize: "13px",
+                }}
+              >
+                選択中のスポット（{selectedForRoute.length}件）
+              </p>
+              {selectedForRoute.length === 0 && (
+                <p style={{ margin: 0, fontSize: "12px", color: "#999" }}>
+                  ピンをタップして選択
+                </p>
+              )}
+              {selectedForRoute.map((spot, i) => (
+                <div
+                  key={spot.id}
+                  style={{
+                    fontSize: "12px",
+                    padding: "4px 0",
+                    borderBottom: "1px solid #eee",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span>{i + 1}.</span>
+                  <span style={{ flex: 1 }}>{spot.name}</span>
+                  <span
+                    onClick={() => handleMarkerClickForRoute(spot)}
+                    style={{ cursor: "pointer", color: "#f44336" }}
+                  >
+                    ✕
+                  </span>
+                </div>
+              ))}
+              {selectedForRoute.length >= 2 && (
+                <button
+                  onClick={() => {
+                    // 次のステップ（移動手段・時間入力）へ
+                    const ids = selectedForRoute.map((s) => s.id).join(",");
+                    window.location.href = `/routes/new?spots=${ids}`;
+                  }}
+                  style={{
+                    marginTop: "8px",
+                    width: "100%",
+                    padding: "6px",
+                    background: "#4CAF50",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  次へ →
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <Map
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={{ longitude: 130.2988, latitude: 33.2494, zoom: 9 }}
@@ -128,7 +257,11 @@ export default function MapPage() {
             anchor="bottom"
             onClick={(e) => {
               e.originalEvent.stopPropagation();
-              setSelectedSpot(spot);
+              if (routeMode) {
+                handleMarkerClickForRoute(spot);
+              } else {
+                setSelectedSpot(spot);
+              }
             }}
           >
             <div
@@ -138,16 +271,12 @@ export default function MapPage() {
                 filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
               }}
             >
-              {checkedInSpots.has(spot.id)
-                ? "✅"
-                : spot.is_sacred
-                  ? "📍"
-                  : "🗺️"}
+              {getMarkerEmoji(spot)}
             </div>
           </Marker>
         ))}
 
-        {selectedSpot && (
+        {!routeMode && selectedSpot && (
           <Popup
             longitude={selectedSpot.lng}
             latitude={selectedSpot.lat}

@@ -6,6 +6,7 @@ import MapPage from "./pages/MapPage";
 import SpotListPage from "./pages/SpotListPage";
 import SpotDetailPage from "./pages/SpotDetailPage";
 import RouteNewPage from "./pages/RouteNewPage";
+import RouteResultPage from "./pages/RouteResultPage";
 import MyPage from "./pages/MyPage";
 import LoginPage from "./pages/LoginPage";
 
@@ -13,18 +14,14 @@ function App() {
   const setUser = useAuthStore((state) => state.setUser);
 
   useEffect(() => {
-    // 現在のセッションを取得
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
-
-    // 認証状態の変化を監視
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => subscription.unsubscribe();
   }, [setUser]);
 
@@ -35,6 +32,7 @@ function App() {
         <Route path="/spots" element={<SpotListPage />} />
         <Route path="/spots/:id" element={<SpotDetailPage />} />
         <Route path="/routes/new" element={<RouteNewPage />} />
+        <Route path="/routes/:id" element={<RouteResultPage />} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Routes>
