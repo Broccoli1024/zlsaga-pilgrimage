@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import LangToggle from "../components/ui/LangToggle";
 import SpotListPanel from "../components/spot/SpotListPanel";
 import type { Spot } from "../types";
+import SpotDetailPopup from "../components/spot/SpotDetailPopup";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -308,58 +309,23 @@ export default function MapPage() {
             latitude={selectedSpot.lat}
             anchor="top"
             onClose={() => setSelectedSpot(null)}
+            maxWidth="300px"
           >
-            <div style={{ padding: "4px", minWidth: "160px" }}>
-              <strong>{selectedSpot.name}</strong>
-              <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#666" }}>
-                {selectedSpot.description}
-              </p>
-              {user &&
-                (checkedInSpots.has(selectedSpot.id) ? (
-                  <button
-                    onClick={() => handleUnCheckin(selectedSpot)}
-                    disabled={checkingIn}
-                    style={{
-                      marginTop: "8px",
-                      padding: "4px 12px",
-                      width: "100%",
-                      cursor: "pointer",
-                      background: "#f44336",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {checkingIn
-                      ? t("map.processing")
-                      : `✅ ${t("map.uncheckin")}`}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCheckin(selectedSpot)}
-                    disabled={checkingIn}
-                    style={{
-                      marginTop: "8px",
-                      padding: "4px 12px",
-                      width: "100%",
-                      cursor: "pointer",
-                      background: "#4CAF50",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                    }}
-                  >
-                    {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
-                  </button>
-                ))}
-              {!user && (
-                <p
-                  style={{ fontSize: "11px", color: "#999", marginTop: "8px" }}
-                >
-                  {t("map.loginRequired")}
-                </p>
-              )}
-            </div>
+            <SpotDetailPopup
+              spot={selectedSpot}
+              areaName={
+                areas.find((a) => a.id === selectedSpot.area_id)?.name ?? ""
+              }
+              categoryName={
+                categories.find((c) => c.id === selectedSpot.category_id)
+                  ?.name ?? ""
+              }
+              checkedIn={checkedInSpots.has(selectedSpot.id)}
+              checkingIn={checkingIn}
+              canCheckin={!!user}
+              onCheckin={() => handleCheckin(selectedSpot)}
+              onUnCheckin={() => handleUnCheckin(selectedSpot)}
+            />
           </Popup>
         )}
       </Map>
