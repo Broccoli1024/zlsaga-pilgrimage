@@ -3,47 +3,72 @@ import Map, { Marker, Popup } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
-import type { Spot } from "../types";
 import { useTranslation } from "react-i18next";
 import LangToggle from "../components/ui/LangToggle";
+import SpotListPanel from "../components/spot/SpotListPanel";
+import type { Spot } from "../types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+
+interface Area {
+  id: string;
+  name: string;
+  name_en: string | null;
+}
+interface Category {
+  id: string;
+  name: string;
+  name_en: string | null;
+}
+interface Character {
+  id: string;
+  name: string;
+  name_en: string | null;
+}
+interface SpotCharacter {
+  spot_id: string;
+  character_id: string;
+}
 
 export default function MapPage() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
+
   const [spots, setSpots] = useState<Spot[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [spotCharacters, setSpotCharacters] = useState<SpotCharacter[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
   const [checkedInSpots, setCheckedInSpots] = useState<Set<string>>(new Set());
   const [checkingIn, setCheckingIn] = useState(false);
   const [routeMode, setRouteMode] = useState(false);
   const [selectedForRoute, setSelectedForRoute] = useState<Spot[]>([]);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   useEffect(() => {
-    const fetchSpots = async () => {
-      const { data, error } = await supabase
-        .from("spots")
-        .select("*")
-        .eq("is_published", true);
-      if (error) {
-        console.error("スポット取得エラー:", error);
-        return;
-      }
-      setSpots(data ?? []);
+    const fetchData = async () => {
+      const [spotsRes, areasRes, categoriesRes, charactersRes, spotCharsRes] =
+        await Promise.all([
+          supabase.from("spots").select("*").eq("is_published", true),
+          supabase.from("areas").select("id, name, name_en").order("name"),
+          supabase.from("categories").select("id, name, name_en").order("name"),
+          supabase.from("characters").select("id, name, name_en").order("name"),
+          supabase.from("spot_characters").select("spot_id, character_id"),
+        ]);
+      if (spotsRes.data) setSpots(spotsRes.data);
+      if (areasRes.data) setAreas(areasRes.data);
+      if (categoriesRes.data) setCategories(categoriesRes.data);
+      if (charactersRes.data) setCharacters(charactersRes.data);
+      if (spotCharsRes.data) setSpotCharacters(spotCharsRes.data);
     };
-    fetchSpots();
+    fetchData();
   }, []);
 
   useEffect(() => {
     if (!user) return;
     const fetchCheckins = async () => {
-      const { data, error } = await supabase
-        .from("spot_checkins")
-        .select("spot_id");
-      if (error) {
-        console.error("チェックイン取得エラー:", error);
-        return;
-      }
+      const { data } = await supabase.from("spot_checkins").select("spot_id");
       setCheckedInSpots(new Set(data?.map((c) => c.spot_id) ?? []));
     };
     fetchCheckins();
@@ -61,11 +86,7 @@ export default function MapPage() {
         { user_id: user.id, spot_id: spot.id },
         { onConflict: "user_id,spot_id" },
       );
-    if (error) {
-      console.error("チェックインエラー:", error);
-    } else {
-      setCheckedInSpots((prev) => new Set([...prev, spot.id]));
-    }
+    if (!error) setCheckedInSpots((prev) => new Set([...prev, spot.id]));
     setCheckingIn(false);
   };
 
@@ -78,9 +99,7 @@ export default function MapPage() {
       .delete()
       .eq("user_id", user.id)
       .eq("spot_id", spot.id);
-    if (error) {
-      console.error("チェックイン取り消しエラー:", error);
-    } else {
+    if (!error) {
       setCheckedInSpots((prev) => {
         const next = new Set(prev);
         next.delete(spot.id);
@@ -116,7 +135,7 @@ export default function MapPage() {
           position: "absolute",
           top: 10,
           right: 10,
-          zIndex: 1,
+          zIndex: 2,
           background: "white",
           padding: "8px 12px",
           borderRadius: "8px",
@@ -131,14 +150,29 @@ export default function MapPage() {
         {user ? `👤 ${user.email}` : <a href="/login">{t("map.login")}</a>}
       </div>
 
+      {/* スポット一覧パネル */}
+      <SpotListPanel
+        spots={spots}
+        checkedInSpots={checkedInSpots}
+        areas={areas}
+        categories={categories}
+        characters={characters}
+        spotCharacters={spotCharacters}
+        onSpotClick={(spot) => {
+          setSelectedSpot(spot);
+          setRouteMode(false);
+        }}
+        onOpenChange={setIsPanelOpen}
+      />
+
       {/* ルート作成ボタン */}
-      {user && (
+      {user && !isPanelOpen && (
         <div
           style={{
             position: "absolute",
-            top: 10,
+            top: 100,
             left: 10,
-            zIndex: 1,
+            zIndex: 2,
             display: "flex",
             flexDirection: "column",
             gap: "8px",
