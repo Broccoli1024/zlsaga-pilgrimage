@@ -52,8 +52,15 @@ export interface Visit {
   user_id: string;
   spot_id: string;
   visited_at: string;
-  sacred_score: number | null;
   note: string | null;
+}
+
+export interface SpotCheckin {
+  id: string;
+  user_id: string;
+  spot_id: string;
+  first_visited_at: string;
+  is_favorite: boolean;
 }
 
 export interface Route {

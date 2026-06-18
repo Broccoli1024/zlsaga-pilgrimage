@@ -29,10 +29,12 @@ interface Props {
   areaName: string;
   categoryName: string;
   checkedIn: boolean;
+  isFavorite: boolean;
   checkingIn: boolean;
   canCheckin: boolean;
   onCheckin: () => void;
   onUnCheckin: () => void;
+  onToggleFavorite: () => void;
 }
 
 const seasonLabel = (season: number, mediaType: string) => {
@@ -47,10 +49,12 @@ export default function SpotDetailPopup({
   areaName,
   categoryName,
   checkedIn,
+  isFavorite,
   checkingIn,
   canCheckin,
   onCheckin,
   onUnCheckin,
+  onToggleFavorite,
 }: Props) {
   const { t, i18n } = useTranslation();
   const isEn = i18n.language.startsWith("en");
@@ -278,22 +282,37 @@ export default function SpotDetailPopup({
       {/* チェックインボタン */}
       {canCheckin &&
         (checkedIn ? (
-          <button
-            onClick={onUnCheckin}
-            disabled={checkingIn}
-            style={{
-              marginTop: "8px",
-              padding: "6px 12px",
-              width: "100%",
-              cursor: "pointer",
-              background: "#f44336",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-            }}
-          >
-            {checkingIn ? t("map.processing") : `✅ ${t("map.uncheckin")}`}
-          </button>
+          <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+            <button
+              onClick={onToggleFavorite}
+              style={{
+                padding: "6px 10px",
+                cursor: "pointer",
+                background: isFavorite ? "#FFC107" : "#f5f5f5",
+                color: isFavorite ? "white" : "#777",
+                border: "none",
+                borderRadius: "4px",
+                fontSize: "13px",
+              }}
+            >
+              {isFavorite ? "⭐ お気に入り" : "☆ お気に入り"}
+            </button>
+            <button
+              onClick={onUnCheckin}
+              disabled={checkingIn}
+              style={{
+                flex: 1,
+                padding: "6px 12px",
+                cursor: "pointer",
+                background: "#f44336",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+              }}
+            >
+              {checkingIn ? t("map.processing") : `✅ ${t("map.uncheckin")}`}
+            </button>
+          </div>
         ) : (
           <button
             onClick={onCheckin}
@@ -312,11 +331,6 @@ export default function SpotDetailPopup({
             {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
           </button>
         ))}
-      {!canCheckin && (
-        <p style={{ fontSize: "11px", color: "#999", marginTop: "8px" }}>
-          {t("map.loginRequired")}
-        </p>
-      )}
     </div>
   );
 }

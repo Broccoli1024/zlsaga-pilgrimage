@@ -41,7 +41,9 @@ export default function MapPage() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [spotCharacters, setSpotCharacters] = useState<SpotCharacter[]>([]);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  const [checkedInSpots, setCheckedInSpots] = useState<Set<string>>(new Set());
+  const [checkedInSpots, setCheckedInSpots] = useState<Record<string, boolean>>(
+    {},
+  );
   const [checkingIn, setCheckingIn] = useState(false);
   const [routeMode, setRouteMode] = useState(false);
   const [selectedForRoute, setSelectedForRoute] = useState<Spot[]>([]);
@@ -69,8 +71,18 @@ export default function MapPage() {
   useEffect(() => {
     if (!user) return;
     const fetchCheckins = async () => {
-      const { data } = await supabase.from("spot_checkins").select("spot_id");
-      setCheckedInSpots(new Set(data?.map((c) => c.spot_id) ?? []));
+      const { data, error } = await supabase
+        .from("spot_checkins")
+        .select("spot_id, is_favorite");
+      if (error) {
+        console.error("チェックイン取得エラー:", error);
+        return;
+      }
+      const map: Record<string, boolean> = {};
+      data?.forEach((c) => {
+        map[c.spot_id] = c.is_favorite;
+      });
+      setCheckedInSpots(map);
     };
     fetchCheckins();
   }, [user]);
@@ -87,7 +99,7 @@ export default function MapPage() {
         { user_id: user.id, spot_id: spot.id },
         { onConflict: "user_id,spot_id" },
       );
-    if (!error) setCheckedInSpots((prev) => new Set([...prev, spot.id]));
+    if (!error) setCheckedInSpots((prev) => ({ ...prev, [spot.id]: false }));
     setCheckingIn(false);
   };
 
@@ -102,12 +114,25 @@ export default function MapPage() {
       .eq("spot_id", spot.id);
     if (!error) {
       setCheckedInSpots((prev) => {
-        const next = new Set(prev);
-        next.delete(spot.id);
+        const next = { ...prev };
+        delete next[spot.id];
         return next;
       });
     }
     setCheckingIn(false);
+  };
+
+  const handleToggleFavorite = async (spot: Spot) => {
+    if (!user) return;
+    const current = checkedInSpots[spot.id] ?? false;
+    const { error } = await supabase
+      .from("spot_checkins")
+      .update({ is_favorite: !current })
+      .eq("user_id", user.id)
+      .eq("spot_id", spot.id);
+    if (!error) {
+      setCheckedInSpots((prev) => ({ ...prev, [spot.id]: !current }));
+    }
   };
 
   const handleMarkerClickForRoute = (spot: Spot) => {
@@ -124,7 +149,8 @@ export default function MapPage() {
       if (index !== -1) return `${index + 1}️⃣`;
       return "⚪";
     }
-    if (checkedInSpots.has(spot.id)) return "✅";
+    if (checkedInSpots[spot.id]) return "⭐";
+    if (spot.id in checkedInSpots) return "✅";
     return spot.is_sacred ? "📍" : "🗺️";
   };
 
@@ -154,7 +180,7 @@ export default function MapPage() {
       {/* スポット一覧パネル */}
       <SpotListPanel
         spots={spots}
-        checkedInSpots={checkedInSpots}
+        checkedInSpots={new Set(Object.keys(checkedInSpots))}
         areas={areas}
         categories={categories}
         characters={characters}
@@ -320,11 +346,13 @@ export default function MapPage() {
                 categories.find((c) => c.id === selectedSpot.category_id)
                   ?.name ?? ""
               }
-              checkedIn={checkedInSpots.has(selectedSpot.id)}
+              checkedIn={selectedSpot.id in checkedInSpots}
+              isFavorite={checkedInSpots[selectedSpot.id] ?? false}
               checkingIn={checkingIn}
               canCheckin={!!user}
               onCheckin={() => handleCheckin(selectedSpot)}
               onUnCheckin={() => handleUnCheckin(selectedSpot)}
+              onToggleFavorite={() => handleToggleFavorite(selectedSpot)}
             />
           </Popup>
         )}
