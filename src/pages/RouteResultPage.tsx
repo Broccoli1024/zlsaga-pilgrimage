@@ -1,5 +1,7 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { supabase } from "../lib/supabase";
 import type { Spot } from "../types";
 
 interface RouteState {
@@ -10,13 +12,87 @@ interface RouteState {
   transportMode: string;
 }
 
+interface RouteSpotRow {
+  spot_id: string;
+  order_index: number;
+  travel_min_from_prev: number | null;
+  spots: Spot;
+}
+
 export default function RouteResultPage() {
+  const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const state = location.state as RouteState | null;
 
-  if (!state) {
+  const initialState = location.state as RouteState | null;
+  const [routeData, setRouteData] = useState<RouteState | null>(initialState);
+  const [loading, setLoading] = useState(!initialState);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    // location.stateがあれば再取得不要
+    if (initialState || !id) return;
+
+    const fetchRoute = async () => {
+      setLoading(true);
+
+      const { data: route, error: routeError } = await supabase
+        .from("routes")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (routeError || !route) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const { data: routeSpots, error: routeSpotsError } = await supabase
+        .from("route_spots")
+        .select("spot_id, order_index, travel_min_from_prev, spots(*)")
+        .eq("route_id", id)
+        .order("order_index", { ascending: true })
+        .returns<RouteSpotRow[]>();
+
+      if (routeSpotsError || !routeSpots) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+
+      const spots = routeSpots.map((rs) => rs.spots);
+      const travelTimes: Record<string, number> = {};
+      routeSpots.forEach((rs, i) => {
+        if (i > 0 && rs.travel_min_from_prev !== null) {
+          travelTimes[`${routeSpots[i - 1].spot_id}_${rs.spot_id}`] =
+            rs.travel_min_from_prev;
+        }
+      });
+
+      setRouteData({
+        spots,
+        travelTimes,
+        totalMin: route.total_minutes ?? 0,
+        availableMinutes: route.total_minutes ?? 0,
+        transportMode: route.transport_mode,
+      });
+      setLoading(false);
+    };
+
+    fetchRoute();
+  }, [id, initialState]);
+
+  if (loading) {
+    return (
+      <div style={{ padding: "2rem", textAlign: "center" }}>
+        <p>読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (notFound || !routeData) {
     return (
       <div style={{ padding: "2rem" }}>
         <p>{t("result.noData")}</p>
@@ -26,7 +102,7 @@ export default function RouteResultPage() {
   }
 
   const { spots, travelTimes, totalMin, availableMinutes, transportMode } =
-    state;
+    routeData;
   const isOverTime = totalMin > availableMinutes;
 
   return (
