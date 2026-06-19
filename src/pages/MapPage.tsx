@@ -8,6 +8,7 @@ import LangToggle from "../components/ui/LangToggle";
 import SpotListPanel from "../components/spot/SpotListPanel";
 import type { Spot } from "../types";
 import SpotDetailPopup from "../components/spot/SpotDetailPopup";
+import { Link } from "react-router-dom";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -174,7 +175,16 @@ export default function MapPage() {
         }}
       >
         <LangToggle />
-        {user ? `👤 ${user.email}` : <a href="/login">{t("map.login")}</a>}
+        {user ? (
+          <Link
+            to="/mypage"
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            👤 {user.email}
+          </Link>
+        ) : (
+          <a href="/login">{t("map.login")}</a>
+        )}
       </div>
 
       {/* スポット一覧パネル */}

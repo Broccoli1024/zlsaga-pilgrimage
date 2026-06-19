@@ -54,5 +54,22 @@
     "backToMap": "Back to Map",
     "noData": "Route data not found.",
     "travelTime": "approx. "
+  },
+  "mypage": {
+    "loginRequired": "Login required to view your page",
+    "toLogin": "Go to Login",
+    "visitedSpots": "Visited Spots",
+    "tabSpots": "📍 Visited",
+    "tabHistory": "📜 History",
+    "tabRoutes": "🗺️ Routes",
+    "noVisits": "No visit records yet",
+    "firstVisit": "First visit: ",
+    "noHistory": "No visit history",
+    "noRoutes": "No routes created",
+    "carRoute": "🚗 Car Route",
+    "transitRoute": "🚃 Transit Route",
+    "total": "Total ",
+    "visitedCount": " visits",
+    "deletedSpot": "(Deleted spot)"
   }
 }

@@ -54,5 +54,22 @@
     "backToMap": "地図に戻る",
     "noData": "ルートデータが見つかりません。",
     "travelTime": "約"
+  },
+  "mypage": {
+    "loginRequired": "マイページを見るにはログインが必要です",
+    "toLogin": "ログインへ",
+    "visitedSpots": "訪問済みスポット",
+    "tabSpots": "📍 訪問済み",
+    "tabHistory": "📜 履歴",
+    "tabRoutes": "🗺️ ルート",
+    "noVisits": "まだ訪問記録がありません",
+    "firstVisit": "初訪問：",
+    "noHistory": "訪問履歴がありません",
+    "noRoutes": "作成したルートがありません",
+    "carRoute": "🚗 自動車ルート",
+    "transitRoute": "🚃 公共交通ルート",
+    "total": "合計",
+    "visitedCount": "件訪問",
+    "deletedSpot": "（削除済みスポット）"
   }
 }
