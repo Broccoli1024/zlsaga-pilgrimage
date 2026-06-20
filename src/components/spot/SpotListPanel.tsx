@@ -200,6 +200,36 @@ export default function SpotListPanel({
                 </option>
               ))}
             </select>
+
+            {/* リセットボタン */}
+            {(filters.sacredFilter !== "all" ||
+              filters.areaFilter !== "all" ||
+              filters.categoryFilter !== "all" ||
+              filters.characterFilter !== "all") && (
+              <button
+                onClick={() =>
+                  onFiltersChange({
+                    sacredFilter: "all",
+                    areaFilter: "all",
+                    categoryFilter: "all",
+                    characterFilter: "all",
+                  })
+                }
+                style={{
+                  width: "100%",
+                  marginTop: "6px",
+                  padding: "6px",
+                  fontSize: "12px",
+                  borderRadius: "6px",
+                  border: "1px solid #f44336",
+                  background: "white",
+                  color: "#f44336",
+                  cursor: "pointer",
+                }}
+              >
+                🔄 フィルタをリセット
+              </button>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: "auto" }}>
