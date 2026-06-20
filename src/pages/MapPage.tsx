@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
-import Map, { Marker, Popup } from "react-map-gl/mapbox";
+import { useEffect, useState, useCallback } from "react";
+import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
-import { useTranslation } from "react-i18next";
 import LangToggle from "../components/ui/LangToggle";
 import SpotListPanel from "../components/spot/SpotListPanel";
-import type { Spot } from "../types";
 import SpotDetailPopup from "../components/spot/SpotDetailPopup";
-import { Link } from "react-router-dom";
+import type { Spot } from "../types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -31,6 +31,14 @@ interface SpotCharacter {
   spot_id: string;
   character_id: string;
 }
+type TransportMode = "car" | "walk";
+
+interface LegResult {
+  fromId: string;
+  toId: string;
+  minutes: number;
+  geometry: GeoJSON.LineString;
+}
 
 export default function MapPage() {
   const { t } = useTranslation();
@@ -46,9 +54,22 @@ export default function MapPage() {
     {},
   );
   const [checkingIn, setCheckingIn] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  // ルート作成関連
   const [routeMode, setRouteMode] = useState(false);
   const [selectedForRoute, setSelectedForRoute] = useState<Spot[]>([]);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [transportMode, setTransportMode] = useState<TransportMode>("car");
+  const [availableMinutes, setAvailableMinutes] = useState<number>(240);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+
+  // 生成済みルート
+  const [routeResult, setRouteResult] = useState<{
+    orderedSpots: Spot[];
+    legs: LegResult[];
+    totalMin: number;
+  } | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,9 +152,7 @@ export default function MapPage() {
       .update({ is_favorite: !current })
       .eq("user_id", user.id)
       .eq("spot_id", spot.id);
-    if (!error) {
-      setCheckedInSpots((prev) => ({ ...prev, [spot.id]: !current }));
-    }
+    if (!error) setCheckedInSpots((prev) => ({ ...prev, [spot.id]: !current }));
   };
 
   const handleMarkerClickForRoute = (spot: Spot) => {
@@ -144,8 +163,21 @@ export default function MapPage() {
     });
   };
 
+  const exitRouteMode = useCallback(() => {
+    setRouteMode(false);
+    setSelectedForRoute([]);
+    setSelectedSpot(null);
+    setRouteResult(null);
+    setGenError(null);
+  }, []);
+
   const getMarkerEmoji = (spot: Spot) => {
     if (routeMode) {
+      if (routeResult) {
+        const idx = routeResult.orderedSpots.findIndex((s) => s.id === spot.id);
+        if (idx !== -1) return `${idx + 1}️⃣`;
+        return "⚪";
+      }
       const index = selectedForRoute.findIndex((s) => s.id === spot.id);
       if (index !== -1) return `${index + 1}️⃣`;
       return "⚪";
@@ -154,6 +186,156 @@ export default function MapPage() {
     if (spot.id in checkedInSpots) return "✅";
     return spot.is_sacred ? "📍" : "🗺️";
   };
+
+  // Mapbox Directions APIで移動時間とジオメトリを取得
+  const fetchLeg = async (
+    from: Spot,
+    to: Spot,
+    mode: TransportMode,
+  ): Promise<LegResult> => {
+    const profile = mode === "car" ? "driving" : "walking";
+    const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const route = data.routes?.[0];
+    return {
+      fromId: from.id,
+      toId: to.id,
+      minutes: Math.ceil((route?.duration ?? 0) / 60),
+      geometry: route?.geometry ?? { type: "LineString", coordinates: [] },
+    };
+  };
+
+  // Greedy法でルートを最適化
+  const optimizeOrder = (
+    targetSpots: Spot[],
+    times: Record<string, number>,
+  ): Spot[] => {
+    if (targetSpots.length <= 2) return targetSpots;
+    const unvisited = [...targetSpots.slice(1)];
+    const result = [targetSpots[0]];
+    while (unvisited.length > 0) {
+      const current = result[result.length - 1];
+      let minTime = Infinity;
+      let nearestIndex = 0;
+      unvisited.forEach((spot, i) => {
+        const time = times[`${current.id}_${spot.id}`] ?? Infinity;
+        if (time < minTime) {
+          minTime = time;
+          nearestIndex = i;
+        }
+      });
+      result.push(unvisited[nearestIndex]);
+      unvisited.splice(nearestIndex, 1);
+    }
+    return result;
+  };
+
+  const handleGenerateRoute = async () => {
+    if (selectedForRoute.length < 2) {
+      setGenError(t("route.needMoreSpots"));
+      return;
+    }
+    setGenerating(true);
+    setGenError(null);
+
+    try {
+      // 全ペアの移動時間を先に取得（Greedy最適化用）
+      const timeMap: Record<string, number> = {};
+      for (let i = 0; i < selectedForRoute.length; i++) {
+        for (let j = 0; j < selectedForRoute.length; j++) {
+          if (i === j) continue;
+          const leg = await fetchLeg(
+            selectedForRoute[i],
+            selectedForRoute[j],
+            transportMode,
+          );
+          timeMap[`${selectedForRoute[i].id}_${selectedForRoute[j].id}`] =
+            leg.minutes;
+        }
+      }
+
+      const ordered = optimizeOrder(selectedForRoute, timeMap);
+
+      // 確定した順序でジオメトリ付きのlegsを取得
+      const legs: LegResult[] = [];
+      for (let i = 0; i < ordered.length - 1; i++) {
+        const leg = await fetchLeg(ordered[i], ordered[i + 1], transportMode);
+        legs.push(leg);
+      }
+
+      const totalTravelMin = legs.reduce((sum, leg) => sum + leg.minutes, 0);
+      const totalStayMin = ordered.reduce(
+        (sum, s) => sum + (s.duration_min ?? 30),
+        0,
+      );
+      const totalMin = totalTravelMin + totalStayMin;
+
+      setRouteResult({ orderedSpots: ordered, legs, totalMin });
+
+      // DB保存（ログイン時のみ）
+      if (user) {
+        const { data: routeData, error: routeError } = await supabase
+          .from("routes")
+          .insert({
+            user_id: user.id,
+            transport_mode: transportMode,
+            total_minutes: totalMin,
+          })
+          .select()
+          .single();
+
+        if (!routeError && routeData) {
+          const routeSpots = ordered.map((spot, i) => ({
+            route_id: routeData.id,
+            spot_id: spot.id,
+            order_index: i,
+            travel_min_from_prev: i === 0 ? null : legs[i - 1].minutes,
+          }));
+          await supabase.from("route_spots").insert(routeSpots);
+
+          const cacheData = legs.map((leg) => ({
+            from_spot_id: leg.fromId,
+            to_spot_id: leg.toId,
+            transport_mode: transportMode,
+            minutes: leg.minutes,
+            source: "mapbox" as const,
+            expires_at: new Date(
+              Date.now() + 30 * 24 * 60 * 60 * 1000,
+            ).toISOString(),
+          }));
+          await supabase
+            .from("travel_times")
+            .upsert(cacheData, {
+              onConflict:
+                "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
+            });
+        }
+      }
+    } catch (err) {
+      console.error("ルート生成エラー:", err);
+      setGenError(t("route.error"));
+    }
+    setGenerating(false);
+  };
+
+  // ルートのGeoJSON（複数legを結合）
+  const routeGeoJSON: GeoJSON.Feature<GeoJSON.LineString> | null = routeResult
+    ? {
+        type: "Feature",
+        properties: {},
+        geometry: {
+          type: "LineString",
+          coordinates: routeResult.legs.flatMap(
+            (leg) => leg.geometry.coordinates,
+          ),
+        },
+      }
+    : null;
+
+  const isOverTime = routeResult
+    ? routeResult.totalMin > availableMinutes
+    : false;
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
@@ -188,21 +370,20 @@ export default function MapPage() {
       </div>
 
       {/* スポット一覧パネル */}
-      <SpotListPanel
-        spots={spots}
-        checkedInSpots={new Set(Object.keys(checkedInSpots))}
-        areas={areas}
-        categories={categories}
-        characters={characters}
-        spotCharacters={spotCharacters}
-        onSpotClick={(spot) => {
-          setSelectedSpot(spot);
-          setRouteMode(false);
-        }}
-        onOpenChange={setIsPanelOpen}
-      />
+      {!routeMode && (
+        <SpotListPanel
+          spots={spots}
+          checkedInSpots={new Set(Object.keys(checkedInSpots))}
+          areas={areas}
+          categories={categories}
+          characters={characters}
+          spotCharacters={spotCharacters}
+          onSpotClick={(spot) => setSelectedSpot(spot)}
+          onOpenChange={setIsPanelOpen}
+        />
+      )}
 
-      {/* ルート作成ボタン */}
+      {/* ルート作成パネル */}
       {user && !isPanelOpen && (
         <div
           style={{
@@ -213,13 +394,18 @@ export default function MapPage() {
             display: "flex",
             flexDirection: "column",
             gap: "8px",
+            maxHeight: "calc(100vh - 120px)",
+            overflowY: "auto",
           }}
         >
           <button
             onClick={() => {
-              setRouteMode(!routeMode);
-              setSelectedForRoute([]);
-              setSelectedSpot(null);
+              if (routeMode) {
+                exitRouteMode();
+              } else {
+                setRouteMode(true);
+                setSelectedSpot(null);
+              }
             }}
             style={{
               padding: "8px 16px",
@@ -235,14 +421,14 @@ export default function MapPage() {
             {routeMode ? `❌ ${t("map.cancel")}` : `🗺️ ${t("map.createRoute")}`}
           </button>
 
-          {routeMode && (
+          {routeMode && !routeResult && (
             <div
               style={{
                 background: "white",
                 borderRadius: "8px",
                 padding: "12px",
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                minWidth: "200px",
+                minWidth: "220px",
               }}
             >
               <p
@@ -281,26 +467,205 @@ export default function MapPage() {
                   </span>
                 </div>
               ))}
+
               {selectedForRoute.length >= 2 && (
-                <button
-                  onClick={() => {
-                    const ids = selectedForRoute.map((s) => s.id).join(",");
-                    window.location.href = `/routes/new?spots=${ids}`;
-                  }}
-                  style={{
-                    marginTop: "8px",
-                    width: "100%",
-                    padding: "6px",
-                    background: "#4CAF50",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {t("map.next")}
-                </button>
+                <>
+                  {/* 移動手段 */}
+                  <p
+                    style={{
+                      margin: "10px 0 4px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {t("route.transport")}
+                  </p>
+                  <div
+                    style={{ display: "flex", gap: "6px", marginBottom: "8px" }}
+                  >
+                    {(["car", "walk"] as TransportMode[]).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setTransportMode(mode)}
+                        style={{
+                          flex: 1,
+                          padding: "6px",
+                          fontSize: "12px",
+                          borderRadius: "6px",
+                          border: "1px solid",
+                          borderColor:
+                            transportMode === mode ? "#2196F3" : "#ddd",
+                          background:
+                            transportMode === mode ? "#E3F2FD" : "white",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {t(`route.${mode}`)}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 利用可能時間 */}
+                  <p style={{ margin: "0 0 4px", fontSize: "12px" }}>
+                    {t("route.availableTime")}：
+                    <strong>
+                      {Math.floor(availableMinutes / 60)}
+                      {t("route.hours")}
+                      {availableMinutes % 60 > 0
+                        ? `${availableMinutes % 60}${t("route.minutes")}`
+                        : ""}
+                    </strong>
+                  </p>
+                  <input
+                    type="range"
+                    min={60}
+                    max={600}
+                    step={30}
+                    value={availableMinutes}
+                    onChange={(e) =>
+                      setAvailableMinutes(Number(e.target.value))
+                    }
+                    style={{ width: "100%", marginBottom: "8px" }}
+                  />
+
+                  {genError && (
+                    <p
+                      style={{
+                        color: "red",
+                        fontSize: "11px",
+                        margin: "0 0 6px",
+                      }}
+                    >
+                      {genError}
+                    </p>
+                  )}
+
+                  <button
+                    onClick={handleGenerateRoute}
+                    disabled={generating}
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                      background: generating ? "#ccc" : "#4CAF50",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      cursor: generating ? "not-allowed" : "pointer",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {generating ? t("route.generating") : t("route.generate")}
+                  </button>
+                </>
               )}
+            </div>
+          )}
+
+          {/* ルート結果表示 */}
+          {routeResult && (
+            <div
+              style={{
+                background: "white",
+                borderRadius: "8px",
+                padding: "12px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                minWidth: "220px",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 6px",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                }}
+              >
+                {t("result.title")}
+              </p>
+              <div
+                style={{
+                  padding: "8px",
+                  marginBottom: "8px",
+                  borderRadius: "6px",
+                  background: isOverTime ? "#FFF3E0" : "#E8F5E9",
+                  fontSize: "12px",
+                }}
+              >
+                {t(`route.${transportMode}`)} ・ {t("result.totalTime")}：
+                <strong>
+                  {Math.floor(routeResult.totalMin / 60)}
+                  {t("route.hours")}
+                  {routeResult.totalMin % 60}
+                  {t("route.minutes")}
+                </strong>
+                {isOverTime && (
+                  <div style={{ color: "#f44336", marginTop: "2px" }}>
+                    ⚠️ {t("result.overTime")}
+                  </div>
+                )}
+              </div>
+
+              {routeResult.orderedSpots.map((spot, i) => (
+                <div
+                  key={spot.id}
+                  style={{ fontSize: "12px", marginBottom: "4px" }}
+                >
+                  {i > 0 && (
+                    <div
+                      style={{
+                        color: "#999",
+                        paddingLeft: "20px",
+                        fontSize: "11px",
+                      }}
+                    >
+                      {t(`route.${transportMode}`)} {t("result.travelTime")}
+                      {routeResult.legs[i - 1].minutes}
+                      {t("route.minutes")}
+                    </div>
+                  )}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        background: "#2196F3",
+                        color: "white",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "10px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span>{spot.name}</span>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                onClick={() => setRouteResult(null)}
+                style={{
+                  width: "100%",
+                  marginTop: "8px",
+                  padding: "6px",
+                  background: "white",
+                  border: "1px solid #ddd",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                }}
+              >
+                {t("result.changeCondition")}
+              </button>
             </div>
           )}
         </div>
@@ -312,6 +677,22 @@ export default function MapPage() {
         style={{ width: "100%", height: "100%" }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
       >
+        {/* ルートの線 */}
+        {routeGeoJSON && (
+          <Source id="route" type="geojson" data={routeGeoJSON}>
+            <Layer
+              id="route-line"
+              type="line"
+              paint={{
+                "line-color": "#2196F3",
+                "line-width": 5,
+                "line-opacity": 0.8,
+              }}
+              layout={{ "line-cap": "round", "line-join": "round" }}
+            />
+          </Source>
+        )}
+
         {spots.map((spot) => (
           <Marker
             key={spot.id}
@@ -321,7 +702,7 @@ export default function MapPage() {
             onClick={(e) => {
               e.originalEvent.stopPropagation();
               if (routeMode) {
-                handleMarkerClickForRoute(spot);
+                if (!routeResult) handleMarkerClickForRoute(spot);
               } else {
                 setSelectedSpot(spot);
               }
