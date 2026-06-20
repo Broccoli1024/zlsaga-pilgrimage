@@ -1,4 +1,4 @@
-export type TransportMode = "car" | "transit";
+export type TransportMode = "car" | "walk";
 export type Lang = "ja" | "en";
 
 export interface Spot {
@@ -23,10 +23,16 @@ export interface Spot {
   nearest_bus_stop_name: string | null;
   nearest_bus_stop_walk_min: number | null;
   access_notes: string | null;
-  is_sacred: boolean;
   is_published: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface SignificanceTag {
+  id: string;
+  name: string;
+  name_en: string | null;
+  sort_order: number;
 }
 
 export interface Episode {
@@ -53,14 +59,6 @@ export interface Visit {
   spot_id: string;
   visited_at: string;
   note: string | null;
-}
-
-export interface SpotCheckin {
-  id: string;
-  user_id: string;
-  spot_id: string;
-  first_visited_at: string;
-  is_favorite: boolean;
 }
 
 export interface Route {

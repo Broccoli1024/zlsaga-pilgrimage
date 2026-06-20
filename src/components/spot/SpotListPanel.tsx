@@ -22,6 +22,7 @@ interface Props {
   onFiltersChange: (filters: SpotFilters) => void;
   onSpotClick: (spot: Spot) => void;
   onOpenChange: (isOpen: boolean) => void;
+  isSpotSacred: (spot: Spot) => boolean;
 }
 
 export default function SpotListPanel({
@@ -34,6 +35,7 @@ export default function SpotListPanel({
   onFiltersChange,
   onSpotClick,
   onOpenChange,
+  isSpotSacred,
 }: Props) {
   const { i18n } = useTranslation();
   const isEn = i18n.language.startsWith("en");
@@ -303,7 +305,7 @@ export default function SpotListPanel({
                     {spot.category_id && (
                       <span>・{getCategoryName(spot.category_id)}</span>
                     )}
-                    <span>・{spot.is_sacred ? "聖地" : "観光"}</span>
+                    <span>・{isSpotSacred(spot) ? "聖地" : "観光"}</span>
                   </div>
                 </div>
               </div>

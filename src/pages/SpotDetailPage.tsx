@@ -59,6 +59,10 @@ export default function SpotDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [significanceTags, setSignificanceTags] = useState<
+    { id: string; name: string; name_en: string | null }[]
+  >([]);
+  const [spotTagIds, setSpotTagIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -127,6 +131,21 @@ export default function SpotDetailPage() {
         });
         setEpisodes(merged);
       }
+
+      const { data: tagLinks } = await supabase
+        .from("spot_significance_tags")
+        .select("tag_id")
+        .eq("spot_id", spotData.id);
+
+      if (tagLinks) {
+        setSpotTagIds(tagLinks.map((t) => t.tag_id));
+      }
+
+      const { data: allTags } = await supabase
+        .from("significance_tags")
+        .select("id, name, name_en")
+        .order("sort_order");
+      if (allTags) setSignificanceTags(allTags);
     };
 
     fetchSpot();
@@ -214,6 +233,13 @@ export default function SpotDetailPage() {
     );
   }
 
+  const isSacred = significanceTags.some(
+    (t) => t.name === "聖地" && spotTagIds.includes(t.id),
+  );
+  const otherTags = significanceTags.filter(
+    (t) => t.name !== "聖地" && spotTagIds.includes(t.id),
+  );
+
   const name = isEn ? (spot.name_en ?? spot.name) : spot.name;
   const description = isEn
     ? (spot.description_en ?? spot.description)
@@ -270,13 +296,13 @@ export default function SpotDetailPage() {
         )}
         <span
           style={{
-            background: spot.is_sacred ? "#FFEBEE" : "#E3F2FD",
-            color: spot.is_sacred ? "#C62828" : "#1565C0",
+            background: isSacred ? "#FFEBEE" : "#E3F2FD",
+            color: isSacred ? "#C62828" : "#1565C0",
             padding: "2px 10px",
             borderRadius: "10px",
           }}
         >
-          {spot.is_sacred ? (isEn ? "Sacred" : "聖地") : isEn ? "Spot" : "観光"}
+          {isSacred ? (isEn ? "Sacred" : "聖地") : isEn ? "Spot" : "観光"}
         </span>
       </div>
 
@@ -332,6 +358,37 @@ export default function SpotDetailPage() {
                 }}
               >
                 {isEn ? (c.name_en ?? c.name) : c.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {otherTags.length > 0 && (
+        <div style={{ marginBottom: "1rem" }}>
+          <p
+            style={{
+              fontSize: "13px",
+              fontWeight: "bold",
+              color: "#777",
+              marginBottom: "6px",
+            }}
+          >
+            {isEn ? "Tags" : "タグ"}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            {otherTags.map((tag) => (
+              <span
+                key={tag.id}
+                style={{
+                  fontSize: "12px",
+                  padding: "3px 10px",
+                  borderRadius: "12px",
+                  background: "#FFF3E0",
+                  color: "#E65100",
+                }}
+              >
+                {isEn ? (tag.name_en ?? tag.name) : tag.name}
               </span>
             ))}
           </div>
@@ -402,9 +459,7 @@ export default function SpotDetailPage() {
           mapStyle="mapbox://styles/mapbox/streets-v12"
         >
           <Marker longitude={spot.lng} latitude={spot.lat} anchor="bottom">
-            <div style={{ fontSize: "26px" }}>
-              {spot.is_sacred ? "📍" : "🗺️"}
-            </div>
+            <div style={{ fontSize: "26px" }}>{isSacred ? "📍" : "🗺️"}</div>
           </Marker>
         </Map>
       </div>

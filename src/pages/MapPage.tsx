@@ -8,8 +8,8 @@ import { useAuthStore } from "../stores/authStore";
 import LangToggle from "../components/ui/LangToggle";
 import SpotListPanel from "../components/spot/SpotListPanel";
 import SpotDetailPopup from "../components/spot/SpotDetailPopup";
-import type { Spot } from "../types";
 import type { SpotFilters } from "../components/spot/SpotListPanel";
+import type { Spot, SignificanceTag } from "../types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -62,6 +62,12 @@ export default function MapPage() {
     categoryFilter: "all",
     characterFilter: "all",
   });
+  const [significanceTags, setSignificanceTags] = useState<SignificanceTag[]>(
+    [],
+  );
+  const [spotTags, setSpotTags] = useState<
+    { spot_id: string; tag_id: string }[]
+  >([]);
 
   // ルート作成関連
   const [routeMode, setRouteMode] = useState(false);
@@ -80,19 +86,33 @@ export default function MapPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [spotsRes, areasRes, categoriesRes, charactersRes, spotCharsRes] =
-        await Promise.all([
-          supabase.from("spots").select("*").eq("is_published", true),
-          supabase.from("areas").select("id, name, name_en").order("name"),
-          supabase.from("categories").select("id, name, name_en").order("name"),
-          supabase.from("characters").select("id, name, name_en").order("name"),
-          supabase.from("spot_characters").select("spot_id, character_id"),
-        ]);
+      const [
+        spotsRes,
+        areasRes,
+        categoriesRes,
+        charactersRes,
+        spotCharsRes,
+        tagsRes,
+        spotTagsRes,
+      ] = await Promise.all([
+        supabase.from("spots").select("*").eq("is_published", true),
+        supabase.from("areas").select("id, name, name_en").order("name"),
+        supabase.from("categories").select("id, name, name_en").order("name"),
+        supabase.from("characters").select("id, name, name_en").order("name"),
+        supabase.from("spot_characters").select("spot_id, character_id"),
+        supabase
+          .from("significance_tags")
+          .select("id, name, name_en, sort_order")
+          .order("sort_order"),
+        supabase.from("spot_significance_tags").select("spot_id, tag_id"),
+      ]);
       if (spotsRes.data) setSpots(spotsRes.data);
       if (areasRes.data) setAreas(areasRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
       if (charactersRes.data) setCharacters(charactersRes.data);
       if (spotCharsRes.data) setSpotCharacters(spotCharsRes.data);
+      if (tagsRes.data) setSignificanceTags(tagsRes.data);
+      if (spotTagsRes.data) setSpotTags(spotTagsRes.data);
     };
     fetchData();
   }, []);
@@ -178,10 +198,21 @@ export default function MapPage() {
     setGenError(null);
   }, []);
 
+  const sacredTagId = significanceTags.find((t) => t.name === "聖地")?.id;
+
+  const isSpotSacred = (spot: Spot): boolean => {
+    if (!sacredTagId) return false;
+    return spotTags.some(
+      (st) => st.spot_id === spot.id && st.tag_id === sacredTagId,
+    );
+  };
+
   const matchesFilter = useCallback(
     (spot: Spot): boolean => {
-      if (filters.sacredFilter === "sacred" && !spot.is_sacred) return false;
-      if (filters.sacredFilter === "non_sacred" && spot.is_sacred) return false;
+      if (filters.sacredFilter === "sacred" && !isSpotSacred(spot))
+        return false;
+      if (filters.sacredFilter === "non_sacred" && isSpotSacred(spot))
+        return false;
       if (filters.areaFilter !== "all" && spot.area_id !== filters.areaFilter)
         return false;
       if (
@@ -199,7 +230,7 @@ export default function MapPage() {
       }
       return true;
     },
-    [filters, spotCharacters],
+    [filters, spotCharacters, spotTags, sacredTagId],
   );
 
   const filteredSpots = spots.filter(matchesFilter);
@@ -217,7 +248,7 @@ export default function MapPage() {
     }
     if (checkedInSpots[spot.id]) return "⭐";
     if (spot.id in checkedInSpots) return "✅";
-    return spot.is_sacred ? "📍" : "🗺️";
+    return isSpotSacred(spot) ? "📍" : "🗺️";
   };
 
   // Mapbox Directions APIで移動時間とジオメトリを取得
@@ -446,6 +477,7 @@ export default function MapPage() {
         onFiltersChange={setFilters}
         onSpotClick={(spot) => setSelectedSpot(spot)}
         onOpenChange={setIsPanelOpen}
+        isSpotSacred={isSpotSacred}
       />
 
       {/* ルート作成パネル */}
@@ -807,6 +839,12 @@ export default function MapPage() {
                 categories.find((c) => c.id === selectedSpot.category_id)
                   ?.name ?? ""
               }
+              isSacred={isSpotSacred(selectedSpot)}
+              tags={significanceTags.filter((t) =>
+                spotTags.some(
+                  (st) => st.spot_id === selectedSpot.id && st.tag_id === t.id,
+                ),
+              )}
               checkedIn={selectedSpot.id in checkedInSpots}
               isFavorite={checkedInSpots[selectedSpot.id] ?? false}
               checkingIn={checkingIn}

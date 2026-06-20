@@ -2,15 +2,23 @@ import { useEffect, useState } from "react";
 import Map, { Marker } from "react-map-gl/mapbox";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../lib/supabase";
-import type { Spot } from "../../types";
+import type { Spot, SignificanceTag } from "../../types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-interface Character {
-  id: string;
-  name: string;
-  name_en: string | null;
-  color_code: string | null;
+interface Props {
+  spot: Spot;
+  areaName: string;
+  categoryName: string;
+  isSacred: boolean;
+  tags: SignificanceTag[];
+  checkedIn: boolean;
+  isFavorite: boolean;
+  checkingIn: boolean;
+  canCheckin: boolean;
+  onCheckin: () => void;
+  onUnCheckin: () => void;
+  onToggleFavorite: () => void;
 }
 
 interface EpisodeInfo {
@@ -24,17 +32,11 @@ interface EpisodeInfo {
   scene_description_en: string | null;
 }
 
-interface Props {
-  spot: Spot;
-  areaName: string;
-  categoryName: string;
-  checkedIn: boolean;
-  isFavorite: boolean;
-  checkingIn: boolean;
-  canCheckin: boolean;
-  onCheckin: () => void;
-  onUnCheckin: () => void;
-  onToggleFavorite: () => void;
+interface Character {
+  id: string;
+  name: string;
+  name_en: string | null;
+  color_code: string | null;
 }
 
 const seasonLabel = (season: number, mediaType: string) => {
@@ -48,6 +50,8 @@ export default function SpotDetailPopup({
   spot,
   areaName,
   categoryName,
+  isSacred,
+  tags,
   checkedIn,
   isFavorite,
   checkingIn,
@@ -126,6 +130,7 @@ export default function SpotDetailPopup({
           gap: "6px",
           margin: "6px 0",
           fontSize: "11px",
+          flexWrap: "wrap",
         }}
       >
         <span
@@ -150,15 +155,44 @@ export default function SpotDetailPopup({
         )}
         <span
           style={{
-            background: spot.is_sacred ? "#FFEBEE" : "#E3F2FD",
-            color: spot.is_sacred ? "#C62828" : "#1565C0",
+            background: isSacred ? "#FFEBEE" : "#E3F2FD",
+            color: isSacred ? "#C62828" : "#1565C0",
             padding: "2px 8px",
             borderRadius: "10px",
           }}
         >
-          {spot.is_sacred ? "聖地" : "観光"}
+          {isSacred ? "聖地" : "観光"}
         </span>
       </div>
+
+      {/* 重要度タグ */}
+      {tags.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: "4px",
+            margin: "4px 0",
+            flexWrap: "wrap",
+          }}
+        >
+          {tags
+            .filter((t) => t.name !== "聖地")
+            .map((tag) => (
+              <span
+                key={tag.id}
+                style={{
+                  fontSize: "10px",
+                  background: "#FFF3E0",
+                  color: "#E65100",
+                  padding: "1px 6px",
+                  borderRadius: "8px",
+                }}
+              >
+                {tag.name}
+              </span>
+            ))}
+        </div>
+      )}
 
       {description && (
         <p
@@ -272,9 +306,7 @@ export default function SpotDetailPopup({
           interactive={false}
         >
           <Marker longitude={spot.lng} latitude={spot.lat} anchor="bottom">
-            <div style={{ fontSize: "20px" }}>
-              {spot.is_sacred ? "📍" : "🗺️"}
-            </div>
+            <div style={{ fontSize: "20px" }}>{isSacred ? "📍" : "🗺️"}</div>
           </Marker>
         </Map>
       </div>

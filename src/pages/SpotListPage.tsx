@@ -28,17 +28,31 @@ export default function SpotListPage() {
   const [sacredFilter, setSacredFilter] = useState<SacredFilter>("all");
   const [areaFilter, setAreaFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [significanceTags, setSignificanceTags] = useState<
+    { id: string; name: string; name_en: string | null }[]
+  >([]);
+  const [spotTags, setSpotTags] = useState<
+    { spot_id: string; tag_id: string }[]
+  >([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [spotsRes, areasRes, categoriesRes] = await Promise.all([
-        supabase.from("spots").select("*").eq("is_published", true),
-        supabase.from("areas").select("id, name, name_en").order("name"),
-        supabase.from("categories").select("id, name, name_en").order("name"),
-      ]);
+      const [spotsRes, areasRes, categoriesRes, tagsRes, spotTagsRes] =
+        await Promise.all([
+          supabase.from("spots").select("*").eq("is_published", true),
+          supabase.from("areas").select("id, name, name_en").order("name"),
+          supabase.from("categories").select("id, name, name_en").order("name"),
+          supabase
+            .from("significance_tags")
+            .select("id, name, name_en, sort_order")
+            .order("sort_order"),
+          supabase.from("spot_significance_tags").select("spot_id, tag_id"),
+        ]);
       if (spotsRes.data) setSpots(spotsRes.data);
       if (areasRes.data) setAreas(areasRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
+      if (tagsRes.data) setSignificanceTags(tagsRes.data);
+      if (spotTagsRes.data) setSpotTags(spotTagsRes.data);
     };
     fetchData();
   }, []);
@@ -49,16 +63,24 @@ export default function SpotListPage() {
       : "スポット一覧 | ゾンビランドサガ 聖地巡礼";
   }, [isEn]);
 
+  const sacredTagId = significanceTags.find((t) => t.name === "聖地")?.id;
+  const isSpotSacred = (spot: Spot): boolean => {
+    if (!sacredTagId) return false;
+    return spotTags.some(
+      (st) => st.spot_id === spot.id && st.tag_id === sacredTagId,
+    );
+  };
+
   const filteredSpots = useMemo(() => {
     return spots.filter((spot) => {
-      if (sacredFilter === "sacred" && !spot.is_sacred) return false;
-      if (sacredFilter === "non_sacred" && spot.is_sacred) return false;
+      if (sacredFilter === "sacred" && !isSpotSacred(spot)) return false;
+      if (sacredFilter === "non_sacred" && isSpotSacred(spot)) return false;
       if (areaFilter !== "all" && spot.area_id !== areaFilter) return false;
       if (categoryFilter !== "all" && spot.category_id !== categoryFilter)
         return false;
       return true;
     });
-  }, [spots, sacredFilter, areaFilter, categoryFilter]);
+  }, [spots, sacredFilter, areaFilter, categoryFilter, spotTags, sacredTagId]);
 
   const getAreaName = (areaId: string | null) => {
     if (!areaId) return "";
@@ -230,12 +252,12 @@ export default function SpotListPage() {
                   fontSize: "11px",
                   padding: "2px 8px",
                   borderRadius: "10px",
-                  background: spot.is_sacred ? "#FFEBEE" : "#E3F2FD",
-                  color: spot.is_sacred ? "#C62828" : "#1565C0",
+                  background: isSpotSacred(spot) ? "#FFEBEE" : "#E3F2FD",
+                  color: isSpotSacred(spot) ? "#C62828" : "#1565C0",
                   whiteSpace: "nowrap",
                 }}
               >
-                {spot.is_sacred
+                {isSpotSacred(spot)
                   ? isEn
                     ? "Sacred"
                     : "聖地"
