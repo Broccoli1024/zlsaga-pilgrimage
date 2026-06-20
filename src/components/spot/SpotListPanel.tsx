@@ -1,27 +1,37 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Spot } from "../../types";
 
+export type SacredFilter = "all" | "sacred" | "non_sacred";
+
+export interface SpotFilters {
+  sacredFilter: SacredFilter;
+  areaFilter: string;
+  categoryFilter: string;
+  characterFilter: string;
+}
+
 interface Props {
   spots: Spot[];
+  filteredSpots: Spot[];
   checkedInSpots: Set<string>;
   areas: { id: string; name: string; name_en: string | null }[];
   categories: { id: string; name: string; name_en: string | null }[];
   characters: { id: string; name: string; name_en: string | null }[];
-  spotCharacters: { spot_id: string; character_id: string }[];
+  filters: SpotFilters;
+  onFiltersChange: (filters: SpotFilters) => void;
   onSpotClick: (spot: Spot) => void;
-  onOpenChange: (isOpen: boolean) => void; // ← 追加
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-type SacredFilter = "all" | "sacred" | "non_sacred";
-
 export default function SpotListPanel({
-  spots,
+  filteredSpots,
   checkedInSpots,
   areas,
   categories,
   characters,
-  spotCharacters,
+  filters,
+  onFiltersChange,
   onSpotClick,
   onOpenChange,
 }: Props) {
@@ -29,34 +39,6 @@ export default function SpotListPanel({
   const isEn = i18n.language.startsWith("en");
 
   const [isOpen, setIsOpen] = useState(false);
-  const [sacredFilter, setSacredFilter] = useState<SacredFilter>("all");
-  const [areaFilter, setAreaFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [characterFilter, setCharacterFilter] = useState<string>("all");
-
-  const filteredSpots = useMemo(() => {
-    return spots.filter((spot) => {
-      if (sacredFilter === "sacred" && !spot.is_sacred) return false;
-      if (sacredFilter === "non_sacred" && spot.is_sacred) return false;
-      if (areaFilter !== "all" && spot.area_id !== areaFilter) return false;
-      if (categoryFilter !== "all" && spot.category_id !== categoryFilter)
-        return false;
-      if (characterFilter !== "all") {
-        const hasChar = spotCharacters.some(
-          (sc) => sc.spot_id === spot.id && sc.character_id === characterFilter,
-        );
-        if (!hasChar) return false;
-      }
-      return true;
-    });
-  }, [
-    spots,
-    sacredFilter,
-    areaFilter,
-    categoryFilter,
-    characterFilter,
-    spotCharacters,
-  ]);
 
   const getAreaName = (areaId: string | null) => {
     if (!areaId) return "";
@@ -72,7 +54,6 @@ export default function SpotListPanel({
 
   return (
     <>
-      {/* 開閉ボタン */}
       <button
         onClick={() => {
           const next = !isOpen;
@@ -82,7 +63,7 @@ export default function SpotListPanel({
         style={{
           position: "absolute",
           top: 16,
-          left: isOpen ? 270 : 10, // 開いている時はパネルの右側に移動
+          left: isOpen ? 270 : 10,
           zIndex: 2,
           padding: "8px 14px",
           borderRadius: "8px",
@@ -97,7 +78,6 @@ export default function SpotListPanel({
         {isOpen ? "✕" : "📋 一覧"}
       </button>
 
-      {/* サイドパネル */}
       {isOpen && (
         <div
           style={{
@@ -114,7 +94,6 @@ export default function SpotListPanel({
             overflow: "hidden",
           }}
         >
-          {/* ヘッダー */}
           <div style={{ padding: "16px", borderBottom: "1px solid #eee" }}>
             <p
               style={{
@@ -126,7 +105,6 @@ export default function SpotListPanel({
               スポット一覧（{filteredSpots.length}件）
             </p>
 
-            {/* 聖地フィルタ */}
             <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
               {(
                 [
@@ -137,15 +115,19 @@ export default function SpotListPanel({
               ).map(([value, label]) => (
                 <button
                   key={value}
-                  onClick={() => setSacredFilter(value)}
+                  onClick={() =>
+                    onFiltersChange({ ...filters, sacredFilter: value })
+                  }
                   style={{
                     flex: 1,
                     padding: "4px 0",
                     fontSize: "11px",
                     borderRadius: "6px",
                     border: "1px solid",
-                    borderColor: sacredFilter === value ? "#2196F3" : "#ddd",
-                    background: sacredFilter === value ? "#E3F2FD" : "white",
+                    borderColor:
+                      filters.sacredFilter === value ? "#2196F3" : "#ddd",
+                    background:
+                      filters.sacredFilter === value ? "#E3F2FD" : "white",
                     cursor: "pointer",
                   }}
                 >
@@ -154,10 +136,11 @@ export default function SpotListPanel({
               ))}
             </div>
 
-            {/* エリアフィルタ */}
             <select
-              value={areaFilter}
-              onChange={(e) => setAreaFilter(e.target.value)}
+              value={filters.areaFilter}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, areaFilter: e.target.value })
+              }
               style={{
                 width: "100%",
                 padding: "6px",
@@ -175,10 +158,11 @@ export default function SpotListPanel({
               ))}
             </select>
 
-            {/* カテゴリフィルタ */}
             <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              value={filters.categoryFilter}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, categoryFilter: e.target.value })
+              }
               style={{
                 width: "100%",
                 padding: "6px",
@@ -196,10 +180,11 @@ export default function SpotListPanel({
               ))}
             </select>
 
-            {/* キャラクターフィルタ */}
             <select
-              value={characterFilter}
-              onChange={(e) => setCharacterFilter(e.target.value)}
+              value={filters.characterFilter}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, characterFilter: e.target.value })
+              }
               style={{
                 width: "100%",
                 padding: "6px",
@@ -217,7 +202,6 @@ export default function SpotListPanel({
             </select>
           </div>
 
-          {/* スポットリスト */}
           <div style={{ flex: 1, overflowY: "auto" }}>
             {filteredSpots.map((spot) => (
               <div
@@ -225,6 +209,7 @@ export default function SpotListPanel({
                 onClick={() => {
                   onSpotClick(spot);
                   setIsOpen(false);
+                  onOpenChange(false);
                 }}
                 style={{
                   padding: "12px 16px",

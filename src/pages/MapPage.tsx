@@ -9,6 +9,7 @@ import LangToggle from "../components/ui/LangToggle";
 import SpotListPanel from "../components/spot/SpotListPanel";
 import SpotDetailPopup from "../components/spot/SpotDetailPopup";
 import type { Spot } from "../types";
+import type { SpotFilters } from "../components/spot/SpotListPanel";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -55,6 +56,12 @@ export default function MapPage() {
   );
   const [checkingIn, setCheckingIn] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [filters, setFilters] = useState<SpotFilters>({
+    sacredFilter: "all",
+    areaFilter: "all",
+    categoryFilter: "all",
+    characterFilter: "all",
+  });
 
   // ルート作成関連
   const [routeMode, setRouteMode] = useState(false);
@@ -170,6 +177,32 @@ export default function MapPage() {
     setRouteResult(null);
     setGenError(null);
   }, []);
+
+  const matchesFilter = useCallback(
+    (spot: Spot): boolean => {
+      if (filters.sacredFilter === "sacred" && !spot.is_sacred) return false;
+      if (filters.sacredFilter === "non_sacred" && spot.is_sacred) return false;
+      if (filters.areaFilter !== "all" && spot.area_id !== filters.areaFilter)
+        return false;
+      if (
+        filters.categoryFilter !== "all" &&
+        spot.category_id !== filters.categoryFilter
+      )
+        return false;
+      if (filters.characterFilter !== "all") {
+        const hasChar = spotCharacters.some(
+          (sc) =>
+            sc.spot_id === spot.id &&
+            sc.character_id === filters.characterFilter,
+        );
+        if (!hasChar) return false;
+      }
+      return true;
+    },
+    [filters, spotCharacters],
+  );
+
+  const filteredSpots = spots.filter(matchesFilter);
 
   const getMarkerEmoji = (spot: Spot) => {
     if (routeMode) {
@@ -402,26 +435,26 @@ export default function MapPage() {
       </div>
 
       {/* スポット一覧パネル */}
-      {!routeMode && (
-        <SpotListPanel
-          spots={spots}
-          checkedInSpots={new Set(Object.keys(checkedInSpots))}
-          areas={areas}
-          categories={categories}
-          characters={characters}
-          spotCharacters={spotCharacters}
-          onSpotClick={(spot) => setSelectedSpot(spot)}
-          onOpenChange={setIsPanelOpen}
-        />
-      )}
+      <SpotListPanel
+        spots={spots}
+        filteredSpots={filteredSpots}
+        checkedInSpots={new Set(Object.keys(checkedInSpots))}
+        areas={areas}
+        categories={categories}
+        characters={characters}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onSpotClick={(spot) => setSelectedSpot(spot)}
+        onOpenChange={setIsPanelOpen}
+      />
 
       {/* ルート作成パネル */}
-      {user && !isPanelOpen && (
+      {user && (
         <div
           style={{
             position: "absolute",
             top: 100,
-            left: 10,
+            left: isPanelOpen ? 310 : 10,
             zIndex: 2,
             display: "flex",
             flexDirection: "column",
@@ -725,32 +758,37 @@ export default function MapPage() {
           </Source>
         )}
 
-        {spots.map((spot) => (
-          <Marker
-            key={spot.id}
-            longitude={spot.lng}
-            latitude={spot.lat}
-            anchor="bottom"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              if (routeMode) {
-                if (!routeResult) handleMarkerClickForRoute(spot);
-              } else {
-                setSelectedSpot(spot);
-              }
-            }}
-          >
-            <div
-              style={{
-                fontSize: "28px",
-                cursor: "pointer",
-                filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
+        {spots.map((spot) => {
+          const matched = matchesFilter(spot);
+          return (
+            <Marker
+              key={spot.id}
+              longitude={spot.lng}
+              latitude={spot.lat}
+              anchor="bottom"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                if (!matched) return; // フィルタ非一致は操作不可
+                if (routeMode) {
+                  if (!routeResult) handleMarkerClickForRoute(spot);
+                } else {
+                  setSelectedSpot(spot);
+                }
               }}
             >
-              {getMarkerEmoji(spot)}
-            </div>
-          </Marker>
-        ))}
+              <div
+                style={{
+                  fontSize: "28px",
+                  cursor: matched ? "pointer" : "default",
+                  filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
+                  opacity: matched ? 1 : 0.25,
+                }}
+              >
+                {getMarkerEmoji(spot)}
+              </div>
+            </Marker>
+          );
+        })}
 
         {!routeMode && selectedSpot && (
           <Popup
