@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
 import type { Spot } from "../types";
 
-type TransportMode = "car" | "transit";
+type TransportMode = "car" | "walk";
 
 export default function RouteNewPage() {
   const [searchParams] = useSearchParams();
@@ -108,12 +108,10 @@ export default function RouteNewPage() {
         };
       });
 
-      await supabase
-        .from("travel_times")
-        .upsert(cacheData, {
-          onConflict:
-            "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
-        });
+      await supabase.from("travel_times").upsert(cacheData, {
+        onConflict:
+          "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
+      });
 
       navigate(`/routes/${routeData.id}`, {
         state: {
@@ -180,7 +178,7 @@ export default function RouteNewPage() {
           {t("route.transport")}
         </h2>
         <div style={{ display: "flex", gap: "8px" }}>
-          {(["car", "transit"] as TransportMode[]).map((mode) => (
+          {(["car", "walk"] as TransportMode[]).map((mode) => (
             <button
               key={mode}
               onClick={() => setTransportMode(mode)}

@@ -35,7 +35,7 @@
     "selectedSpots": "選択したスポット",
     "transport": "移動手段",
     "car": "🚗 自動車",
-    "transit": "🚃 公共交通機関",
+    "walk": "🚶 徒歩",
     "availableTime": "利用可能時間",
     "hours": "時間",
     "minutes": "分",
