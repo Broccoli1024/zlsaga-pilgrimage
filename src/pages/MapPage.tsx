@@ -61,6 +61,7 @@ export default function MapPage() {
     areaFilter: "all",
     categoryFilter: "all",
     characterFilter: "all",
+    tagFilter: "all",
   });
   const [significanceTags, setSignificanceTags] = useState<SignificanceTag[]>(
     [],
@@ -227,6 +228,12 @@ export default function MapPage() {
             sc.character_id === filters.characterFilter,
         );
         if (!hasChar) return false;
+      }
+      if (filters.tagFilter !== "all") {
+        const hasTag = spotTags.some(
+          (st) => st.spot_id === spot.id && st.tag_id === filters.tagFilter,
+        );
+        if (!hasTag) return false;
       }
       return true;
     },
@@ -473,6 +480,7 @@ export default function MapPage() {
         areas={areas}
         categories={categories}
         characters={characters}
+        significanceTags={significanceTags}
         filters={filters}
         onFiltersChange={setFilters}
         onSpotClick={(spot) => setSelectedSpot(spot)}

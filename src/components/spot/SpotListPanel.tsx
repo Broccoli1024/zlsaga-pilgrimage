@@ -9,6 +9,7 @@ export interface SpotFilters {
   areaFilter: string;
   categoryFilter: string;
   characterFilter: string;
+  tagFilter: string;
 }
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
   areas: { id: string; name: string; name_en: string | null }[];
   categories: { id: string; name: string; name_en: string | null }[];
   characters: { id: string; name: string; name_en: string | null }[];
+  significanceTags: { id: string; name: string; name_en: string | null }[];
   filters: SpotFilters;
   onFiltersChange: (filters: SpotFilters) => void;
   onSpotClick: (spot: Spot) => void;
@@ -31,6 +33,7 @@ export default function SpotListPanel({
   areas,
   categories,
   characters,
+  significanceTags,
   filters,
   onFiltersChange,
   onSpotClick,
@@ -203,11 +206,57 @@ export default function SpotListPanel({
               ))}
             </select>
 
+            <select
+              value={filters.characterFilter}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, characterFilter: e.target.value })
+              }
+              style={{
+                width: "100%",
+                padding: "6px",
+                marginBottom: "6px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                fontSize: "13px",
+              }}
+            >
+              <option value="all">キャラクター：すべて</option>
+              {characters.map((char) => (
+                <option key={char.id} value={char.id}>
+                  {isEn ? (char.name_en ?? char.name) : char.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filters.tagFilter}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, tagFilter: e.target.value })
+              }
+              style={{
+                width: "100%",
+                padding: "6px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                fontSize: "13px",
+              }}
+            >
+              <option value="all">登場度：すべて</option>
+              {significanceTags
+                .filter((t) => t.name !== "聖地")
+                .map((tag) => (
+                  <option key={tag.id} value={tag.id}>
+                    {isEn ? (tag.name_en ?? tag.name) : tag.name}
+                  </option>
+                ))}
+            </select>
+
             {/* リセットボタン */}
             {(filters.sacredFilter !== "all" ||
               filters.areaFilter !== "all" ||
               filters.categoryFilter !== "all" ||
-              filters.characterFilter !== "all") && (
+              filters.characterFilter !== "all" ||
+              filters.tagFilter !== "all") && (
               <button
                 onClick={() =>
                   onFiltersChange({
@@ -215,6 +264,7 @@ export default function SpotListPanel({
                     areaFilter: "all",
                     categoryFilter: "all",
                     characterFilter: "all",
+                    tagFilter: "all",
                   })
                 }
                 style={{
