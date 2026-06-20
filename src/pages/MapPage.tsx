@@ -188,22 +188,71 @@ export default function MapPage() {
   };
 
   // Mapbox Directions APIで移動時間とジオメトリを取得
+  // 移動時間とジオメトリを取得（キャッシュ優先）
   const fetchLeg = async (
     from: Spot,
     to: Spot,
     mode: TransportMode,
   ): Promise<LegResult> => {
+    // ① キャッシュを検索
+    const { data: cached } = await supabase
+      .from("travel_times")
+      .select("minutes, geometry, expires_at")
+      .eq("from_spot_id", from.id)
+      .eq("to_spot_id", to.id)
+      .eq("transport_mode", mode)
+      .is("day_of_week", null)
+      .is("time_of_day", null)
+      .maybeSingle();
+
+    const isValid =
+      cached &&
+      cached.geometry &&
+      (!cached.expires_at || new Date(cached.expires_at) > new Date());
+
+    if (isValid) {
+      return {
+        fromId: from.id,
+        toId: to.id,
+        minutes: cached.minutes,
+        geometry: cached.geometry as GeoJSON.LineString,
+      };
+    }
+
+    // ② キャッシュがなければMapbox APIを呼ぶ
     const profile = mode === "car" ? "driving" : "walking";
     const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
     const res = await fetch(url);
     const data = await res.json();
     const route = data.routes?.[0];
-    return {
+
+    const leg: LegResult = {
       fromId: from.id,
       toId: to.id,
       minutes: Math.ceil((route?.duration ?? 0) / 60),
       geometry: route?.geometry ?? { type: "LineString", coordinates: [] },
     };
+
+    // ③ 取得結果をキャッシュに保存
+    await supabase.from("travel_times").upsert(
+      {
+        from_spot_id: from.id,
+        to_spot_id: to.id,
+        transport_mode: mode,
+        minutes: leg.minutes,
+        geometry: leg.geometry,
+        source: "mapbox" as const,
+        expires_at: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+      },
+      {
+        onConflict:
+          "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
+      },
+    );
+
+    return leg;
   };
 
   // Greedy法でルートを最適化
@@ -293,23 +342,6 @@ export default function MapPage() {
             travel_min_from_prev: i === 0 ? null : legs[i - 1].minutes,
           }));
           await supabase.from("route_spots").insert(routeSpots);
-
-          const cacheData = legs.map((leg) => ({
-            from_spot_id: leg.fromId,
-            to_spot_id: leg.toId,
-            transport_mode: transportMode,
-            minutes: leg.minutes,
-            source: "mapbox" as const,
-            expires_at: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000,
-            ).toISOString(),
-          }));
-          await supabase
-            .from("travel_times")
-            .upsert(cacheData, {
-              onConflict:
-                "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
-            });
         }
       }
     } catch (err) {
