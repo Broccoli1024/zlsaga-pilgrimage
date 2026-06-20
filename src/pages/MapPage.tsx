@@ -77,6 +77,7 @@ export default function MapPage() {
   const [availableMinutes, setAvailableMinutes] = useState<number>(240);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [useTolls, setUseTolls] = useState(true);
 
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
@@ -265,6 +266,8 @@ export default function MapPage() {
     to: Spot,
     mode: TransportMode,
   ): Promise<LegResult> => {
+    const tollsValue = mode === "car" ? useTolls : true; // walkはtollsと無関係なので固定値
+
     // ① キャッシュを検索
     const { data: cached } = await supabase
       .from("travel_times")
@@ -272,6 +275,7 @@ export default function MapPage() {
       .eq("from_spot_id", from.id)
       .eq("to_spot_id", to.id)
       .eq("transport_mode", mode)
+      .eq("use_tolls", tollsValue)
       .is("day_of_week", null)
       .is("time_of_day", null)
       .maybeSingle();
@@ -292,7 +296,8 @@ export default function MapPage() {
 
     // ② キャッシュがなければMapbox APIを呼ぶ
     const profile = mode === "car" ? "driving" : "walking";
-    const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+    const excludeParam = mode === "car" && !useTolls ? "&exclude=toll" : "";
+    const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson${excludeParam}&access_token=${MAPBOX_TOKEN}`;
     const res = await fetch(url);
     const data = await res.json();
     const route = data.routes?.[0];
@@ -312,6 +317,7 @@ export default function MapPage() {
         transport_mode: mode,
         minutes: leg.minutes,
         geometry: leg.geometry,
+        use_tolls: tollsValue,
         source: "mapbox" as const,
         expires_at: new Date(
           Date.now() + 30 * 24 * 60 * 60 * 1000,
@@ -319,7 +325,7 @@ export default function MapPage() {
       },
       {
         onConflict:
-          "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day",
+          "from_spot_id,to_spot_id,transport_mode,day_of_week,time_of_day,use_tolls",
       },
     );
 
@@ -585,6 +591,7 @@ export default function MapPage() {
                   >
                     {t("route.transport")}
                   </p>
+
                   <div
                     style={{ display: "flex", gap: "6px", marginBottom: "8px" }}
                   >
@@ -609,6 +616,26 @@ export default function MapPage() {
                       </button>
                     ))}
                   </div>
+
+                  {transportMode === "car" && (
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "12px",
+                        marginBottom: "8px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={useTolls}
+                        onChange={(e) => setUseTolls(e.target.checked)}
+                      />
+                      有料道路を使う
+                    </label>
+                  )}
 
                   {/* 利用可能時間 */}
                   <p style={{ margin: "0 0 4px", fontSize: "12px" }}>
