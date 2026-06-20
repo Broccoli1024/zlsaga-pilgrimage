@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
@@ -34,6 +34,7 @@ export default function SpotListPage() {
   const [spotTags, setSpotTags] = useState<
     { spot_id: string; tag_id: string }[]
   >([]);
+  const [tagFilter, setTagFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,12 +65,15 @@ export default function SpotListPage() {
   }, [isEn]);
 
   const sacredTagId = significanceTags.find((t) => t.name === "聖地")?.id;
-  const isSpotSacred = (spot: Spot): boolean => {
-    if (!sacredTagId) return false;
-    return spotTags.some(
-      (st) => st.spot_id === spot.id && st.tag_id === sacredTagId,
-    );
-  };
+  const isSpotSacred = useCallback(
+    (spot: Spot): boolean => {
+      if (!sacredTagId) return false;
+      return spotTags.some(
+        (st) => st.spot_id === spot.id && st.tag_id === sacredTagId,
+      );
+    },
+    [spotTags, sacredTagId],
+  );
 
   const filteredSpots = useMemo(() => {
     return spots.filter((spot) => {
@@ -78,9 +82,23 @@ export default function SpotListPage() {
       if (areaFilter !== "all" && spot.area_id !== areaFilter) return false;
       if (categoryFilter !== "all" && spot.category_id !== categoryFilter)
         return false;
+      if (tagFilter !== "all") {
+        const hasTag = spotTags.some(
+          (st) => st.spot_id === spot.id && st.tag_id === tagFilter,
+        );
+        if (!hasTag) return false;
+      }
       return true;
     });
-  }, [spots, sacredFilter, areaFilter, categoryFilter, spotTags, sacredTagId]);
+  }, [
+    spots,
+    sacredFilter,
+    areaFilter,
+    categoryFilter,
+    tagFilter,
+    spotTags,
+    isSpotSacred,
+  ]);
 
   const getAreaName = (areaId: string | null) => {
     if (!areaId) return "";
@@ -192,6 +210,26 @@ export default function SpotListPage() {
               {isEn ? (cat.name_en ?? cat.name) : cat.name}
             </option>
           ))}
+        </select>
+
+        <select
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)}
+          style={{
+            padding: "6px",
+            borderRadius: "6px",
+            border: "1px solid #ddd",
+            fontSize: "13px",
+          }}
+        >
+          <option value="all">{isEn ? "Tag: All" : "登場度：すべて"}</option>
+          {significanceTags
+            .filter((t) => t.name !== "聖地")
+            .map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {isEn ? (tag.name_en ?? tag.name) : tag.name}
+              </option>
+            ))}
         </select>
       </div>
 
