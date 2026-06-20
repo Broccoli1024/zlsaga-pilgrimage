@@ -207,28 +207,6 @@ export default function SpotListPanel({
             </select>
 
             <select
-              value={filters.characterFilter}
-              onChange={(e) =>
-                onFiltersChange({ ...filters, characterFilter: e.target.value })
-              }
-              style={{
-                width: "100%",
-                padding: "6px",
-                marginBottom: "6px",
-                borderRadius: "6px",
-                border: "1px solid #ddd",
-                fontSize: "13px",
-              }}
-            >
-              <option value="all">キャラクター：すべて</option>
-              {characters.map((char) => (
-                <option key={char.id} value={char.id}>
-                  {isEn ? (char.name_en ?? char.name) : char.name}
-                </option>
-              ))}
-            </select>
-
-            <select
               value={filters.tagFilter}
               onChange={(e) =>
                 onFiltersChange({ ...filters, tagFilter: e.target.value })
