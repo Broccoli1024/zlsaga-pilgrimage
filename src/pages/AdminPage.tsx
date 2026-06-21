@@ -539,7 +539,6 @@ export default function AdminPage() {
           if (ep) ids.push(ep.id);
         }
       });
-
       return ids;
     };
 
@@ -560,6 +559,12 @@ export default function AdminPage() {
         const tagsRaw =
           getFirstNonEmpty(record, "タグ ") || getFirstNonEmpty(record, "タグ");
         const episodeTextRaw = getFirstNonEmpty(record, "該当エピソード");
+        const durationKey = Object.keys(record).find((k) =>
+          k.includes("滞在目安時間"),
+        );
+        const durationText = durationKey
+          ? getFirstNonEmpty(record, durationKey)
+          : "";
         const note = getFirstNonEmpty(record, "備考");
 
         const lat = record["_lat"] || "";
@@ -597,6 +602,7 @@ export default function AdminPage() {
         // （loadMastersで取得したareasはAdminPage側のstateにあるためチェック対象外にする場合あり）
 
         const episodeIds = isSacred ? parseEpisodeText(episodeTextRaw) : [];
+        console.log("durationText:", durationText, "record全体:", record);
 
         return {
           name,
@@ -611,7 +617,7 @@ export default function AdminPage() {
           description_en: "",
           access_info: "",
           parking_info: "",
-          duration_min: "",
+          duration_min: durationText, // ← 変更
           nearest_station_name: "",
           nearest_station_walk_min: "",
           nearest_bus_stop_name: "",
