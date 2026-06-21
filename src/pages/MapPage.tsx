@@ -62,6 +62,9 @@ export default function MapPage() {
     categoryFilter: "all",
     characterFilter: "all",
     tagFilter: "all",
+    checkinFilter: "all",
+    favoriteOnly: false,
+    searchQuery: "",
   });
   const [significanceTags, setSignificanceTags] = useState<SignificanceTag[]>(
     [],
@@ -202,12 +205,27 @@ export default function MapPage() {
 
   const sacredTagId = significanceTags.find((t) => t.name === "聖地")?.id;
 
-  const isSpotSacred = (spot: Spot): boolean => {
-    if (!sacredTagId) return false;
-    return spotTags.some(
-      (st) => st.spot_id === spot.id && st.tag_id === sacredTagId,
-    );
-  };
+  const isSpotSacred = useCallback(
+    (spot: Spot): boolean => {
+      if (!sacredTagId) return false;
+      return spotTags.some(
+        (st) => st.spot_id === spot.id && st.tag_id === sacredTagId,
+      );
+    },
+    [spotTags, sacredTagId],
+  );
+
+  const getSpotTagNames = useCallback(
+    (spot: Spot): string[] => {
+      const tagIds = spotTags
+        .filter((st) => st.spot_id === spot.id)
+        .map((st) => st.tag_id);
+      return significanceTags
+        .filter((t) => tagIds.includes(t.id))
+        .map((t) => t.name);
+    },
+    [spotTags, significanceTags],
+  );
 
   const matchesFilter = useCallback(
     (spot: Spot): boolean => {
@@ -236,9 +254,37 @@ export default function MapPage() {
         );
         if (!hasTag) return false;
       }
+      // チェックインフィルタ
+      if (filters.checkinFilter === "visited" && !(spot.id in checkedInSpots))
+        return false;
+      if (filters.checkinFilter === "not_visited" && spot.id in checkedInSpots)
+        return false;
+      // お気に入りフィルタ
+      if (filters.favoriteOnly && !checkedInSpots[spot.id]) return false;
+      // 検索フィルタ
+      if (filters.searchQuery.trim() !== "") {
+        const query = filters.searchQuery.trim().toLowerCase();
+        const nameMatch =
+          spot.name.toLowerCase().includes(query) ||
+          (spot.name_en?.toLowerCase().includes(query) ?? false);
+        const descMatch =
+          (spot.description?.toLowerCase().includes(query) ?? false) ||
+          (spot.description_en?.toLowerCase().includes(query) ?? false);
+        const tagMatch = getSpotTagNames(spot).some((name) =>
+          name.toLowerCase().includes(query),
+        );
+        if (!nameMatch && !descMatch && !tagMatch) return false;
+      }
       return true;
     },
-    [filters, spotCharacters, spotTags, sacredTagId],
+    [
+      filters,
+      spotCharacters,
+      spotTags,
+      checkedInSpots,
+      isSpotSacred,
+      getSpotTagNames,
+    ],
   );
 
   const filteredSpots = spots.filter(matchesFilter);
@@ -482,7 +528,7 @@ export default function MapPage() {
       <SpotListPanel
         spots={spots}
         filteredSpots={filteredSpots}
-        checkedInSpots={new Set(Object.keys(checkedInSpots))}
+        checkedInSpotsMap={checkedInSpots}
         areas={areas}
         categories={categories}
         characters={characters}

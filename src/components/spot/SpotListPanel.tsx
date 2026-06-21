@@ -12,10 +12,23 @@ export interface SpotFilters {
   tagFilter: string;
 }
 
+export type CheckinFilter = "all" | "visited" | "not_visited";
+
+export interface SpotFilters {
+  sacredFilter: SacredFilter;
+  areaFilter: string;
+  categoryFilter: string;
+  characterFilter: string;
+  tagFilter: string;
+  checkinFilter: CheckinFilter;
+  favoriteOnly: boolean;
+  searchQuery: string;
+}
+
 interface Props {
   spots: Spot[];
   filteredSpots: Spot[];
-  checkedInSpots: Set<string>;
+  checkedInSpotsMap: Record<string, boolean>; // key: spot_id, value: is_favorite
   areas: { id: string; name: string; name_en: string | null }[];
   categories: { id: string; name: string; name_en: string | null }[];
   characters: { id: string; name: string; name_en: string | null }[];
@@ -29,7 +42,7 @@ interface Props {
 
 export default function SpotListPanel({
   filteredSpots,
-  checkedInSpots,
+  checkedInSpotsMap,
   areas,
   categories,
   characters,
@@ -109,6 +122,23 @@ export default function SpotListPanel({
             >
               スポット一覧（{filteredSpots.length}件）
             </p>
+
+            <input
+              type="text"
+              value={filters.searchQuery}
+              onChange={(e) =>
+                onFiltersChange({ ...filters, searchQuery: e.target.value })
+              }
+              placeholder="🔍 スポットを検索"
+              style={{
+                width: "100%",
+                padding: "6px 8px",
+                marginBottom: "8px",
+                borderRadius: "6px",
+                border: "1px solid #ddd",
+                fontSize: "13px",
+              }}
+            />
 
             <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
               {(
@@ -229,12 +259,69 @@ export default function SpotListPanel({
                 ))}
             </select>
 
+            <div style={{ display: "flex", gap: "4px", margin: "8px 0" }}>
+              {(
+                [
+                  ["all", "すべて"],
+                  ["visited", "訪問済み"],
+                  ["not_visited", "未訪問"],
+                ] as [CheckinFilter, string][]
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() =>
+                    onFiltersChange({ ...filters, checkinFilter: value })
+                  }
+                  style={{
+                    flex: 1,
+                    padding: "4px 0",
+                    fontSize: "11px",
+                    borderRadius: "6px",
+                    border: "1px solid",
+                    borderColor:
+                      filters.checkinFilter === value ? "#2196F3" : "#ddd",
+                    background:
+                      filters.checkinFilter === value ? "#E3F2FD" : "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "12px",
+                marginBottom: "6px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={filters.favoriteOnly}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    favoriteOnly: e.target.checked,
+                  })
+                }
+              />
+              ⭐ お気に入りのみ表示
+            </label>
+
             {/* リセットボタン */}
             {(filters.sacredFilter !== "all" ||
               filters.areaFilter !== "all" ||
               filters.categoryFilter !== "all" ||
               filters.characterFilter !== "all" ||
-              filters.tagFilter !== "all") && (
+              filters.tagFilter !== "all" ||
+              filters.checkinFilter !== "all" ||
+              filters.favoriteOnly ||
+              filters.searchQuery !== "") && (
               <button
                 onClick={() =>
                   onFiltersChange({
@@ -243,6 +330,9 @@ export default function SpotListPanel({
                     categoryFilter: "all",
                     characterFilter: "all",
                     tagFilter: "all",
+                    checkinFilter: "all",
+                    favoriteOnly: false,
+                    searchQuery: "",
                   })
                 }
                 style={{
@@ -306,18 +396,24 @@ export default function SpotListPanel({
                     >
                       {isEn ? (spot.name_en ?? spot.name) : spot.name}
                     </span>
-                    {checkedInSpots.has(spot.id) && (
+                    {spot.id in checkedInSpotsMap && (
                       <span
                         style={{
                           fontSize: "12px",
-                          background: "#E8F5E9",
-                          color: "#2E7D32",
+                          background: checkedInSpotsMap[spot.id]
+                            ? "#FFF8E1"
+                            : "#E8F5E9",
+                          color: checkedInSpotsMap[spot.id]
+                            ? "#F57F17"
+                            : "#2E7D32",
                           padding: "1px 6px",
                           borderRadius: "10px",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        ✅ 訪問済
+                        {checkedInSpotsMap[spot.id]
+                          ? "⭐ お気に入り"
+                          : "✅ 訪問済"}
                       </span>
                     )}
                   </div>
