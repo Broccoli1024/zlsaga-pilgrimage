@@ -59,6 +59,26 @@ export default function AdminPage() {
   const [editingSpotId, setEditingSpotId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
+  const [editCharacterIds, setEditCharacterIds] = useState<string[]>([]);
+  const [manageSpotCharacters, setManageSpotCharacters] = useState<
+    { spot_id: string; character_id: string }[]
+  >([]);
+  const [manageCharacters, setManageCharacters] = useState<
+    { id: string; name: string; name_en: string | null }[]
+  >([]);
+  const [editEpisodeIds, setEditEpisodeIds] = useState<string[]>([]);
+  const [manageSpotEpisodes, setManageSpotEpisodes] = useState<
+    { spot_id: string; episode_id: string }[]
+  >([]);
+  const [manageEpisodes, setManageEpisodes] = useState<
+    {
+      id: string;
+      media_type: string;
+      season: number;
+      episode_number: number;
+      title: string;
+    }[]
+  >([]);
 
   const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
 
@@ -207,6 +227,31 @@ export default function AdminPage() {
     }
     setManageSpots(data.spots);
     setManageSpotTags(data.spotTags);
+
+    const { data: spotChars } = await supabase
+      .from("spot_characters")
+      .select("spot_id, character_id");
+    setManageSpotCharacters(spotChars ?? []);
+
+    const { data: charsData } = await supabase
+      .from("characters")
+      .select("id, name, name_en")
+      .order("sort_order");
+    setManageCharacters(charsData ?? []);
+
+    const { data: spotEps } = await supabase
+      .from("spot_episodes")
+      .select("spot_id, episode_id");
+    setManageSpotEpisodes(spotEps ?? []);
+
+    const { data: episodesData } = await supabase
+      .from("episodes")
+      .select("id, media_type, season, episode_number, title")
+      .order("media_type")
+      .order("season")
+      .order("episode_number");
+    setManageEpisodes(episodesData ?? []);
+
     setLoadingManage(false);
   };
 
@@ -225,11 +270,39 @@ export default function AdminPage() {
     setManageSpots((prev) => prev.filter((s) => s.id !== spotId));
   };
 
+  const episodeLabel = (ep: {
+    media_type: string;
+    season: number;
+    episode_number: number;
+    title: string;
+  }) => {
+    const seasonName =
+      ep.media_type === "movie"
+        ? "劇場版"
+        : ep.season === 1
+          ? "無印"
+          : ep.season === 2
+            ? "リベンジ"
+            : `S${ep.season}`;
+    const epNum = ep.media_type === "movie" ? "" : ` 第${ep.episode_number}話`;
+    return `${seasonName}${epNum}：${ep.title}`;
+  };
+
   const startEdit = (spot: any) => {
     setEditingSpotId(spot.id);
     setEditForm({ ...spot });
     setEditTagIds(
       manageSpotTags.filter((t) => t.spot_id === spot.id).map((t) => t.tag_id),
+    );
+    setEditCharacterIds(
+      manageSpotCharacters
+        .filter((c) => c.spot_id === spot.id)
+        .map((c) => c.character_id),
+    );
+    setEditEpisodeIds(
+      manageSpotEpisodes
+        .filter((e) => e.spot_id === spot.id)
+        .map((e) => e.episode_id),
     );
   };
 
@@ -237,6 +310,8 @@ export default function AdminPage() {
     setEditingSpotId(null);
     setEditForm({});
     setEditTagIds([]);
+    setEditCharacterIds([]);
+    setEditEpisodeIds([]);
   };
 
   const saveEdit = async () => {
@@ -253,6 +328,9 @@ export default function AdminPage() {
           area_id: editForm.area_id || null,
           category_id: editForm.category_id || null,
           description: editForm.description || null,
+          duration_min: editForm.duration_min
+            ? Number(editForm.duration_min)
+            : null,
           is_published: !!editForm.is_published,
         },
         tagIds: editTagIds,
@@ -262,6 +340,31 @@ export default function AdminPage() {
       alert(`更新に失敗しました: ${error?.message || data?.error}`);
       return;
     }
+
+    // キャラクターの更新（一旦全削除して再登録）
+    await supabase
+      .from("spot_characters")
+      .delete()
+      .eq("spot_id", editingSpotId);
+    if (editCharacterIds.length > 0) {
+      await supabase.from("spot_characters").insert(
+        editCharacterIds.map((characterId) => ({
+          spot_id: editingSpotId,
+          character_id: characterId,
+        })),
+      );
+    }
+    // エピソードの更新（一旦全削除して再登録）
+    await supabase.from("spot_episodes").delete().eq("spot_id", editingSpotId);
+    if (editEpisodeIds.length > 0) {
+      await supabase.from("spot_episodes").insert(
+        editEpisodeIds.map((episodeId) => ({
+          spot_id: editingSpotId,
+          episode_id: episodeId,
+        })),
+      );
+    }
+
     await handleLoadManageSpots();
     cancelEdit();
   };
@@ -754,6 +857,110 @@ export default function AdminPage() {
                         minHeight: "60px",
                       }}
                     />
+                    <input
+                      type="number"
+                      value={editForm.duration_min ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          duration_min: e.target.value,
+                        })
+                      }
+                      placeholder="滞在目安時間（分）"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    />
+
+                    <div style={{ marginBottom: "6px" }}>
+                      <p style={{ fontSize: "12px", marginBottom: "4px" }}>
+                        登場キャラクター:
+                      </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "6px",
+                        }}
+                      >
+                        {manageCharacters.map((char) => (
+                          <label
+                            key={char.id}
+                            style={{
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={editCharacterIds.includes(char.id)}
+                              onChange={(e) => {
+                                if (e.target.checked)
+                                  setEditCharacterIds([
+                                    ...editCharacterIds,
+                                    char.id,
+                                  ]);
+                                else
+                                  setEditCharacterIds(
+                                    editCharacterIds.filter(
+                                      (id) => id !== char.id,
+                                    ),
+                                  );
+                              }}
+                            />
+                            {char.name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginBottom: "6px" }}>
+                      <p style={{ fontSize: "12px", marginBottom: "4px" }}>
+                        登場エピソード:
+                      </p>
+                      <div
+                        style={{
+                          maxHeight: "150px",
+                          overflowY: "auto",
+                          border: "1px solid #eee",
+                          borderRadius: "6px",
+                          padding: "6px",
+                        }}
+                      >
+                        {manageEpisodes.map((ep) => (
+                          <label
+                            key={ep.id}
+                            style={{
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              marginBottom: "2px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={editEpisodeIds.includes(ep.id)}
+                              onChange={(e) => {
+                                if (e.target.checked)
+                                  setEditEpisodeIds([...editEpisodeIds, ep.id]);
+                                else
+                                  setEditEpisodeIds(
+                                    editEpisodeIds.filter((id) => id !== ep.id),
+                                  );
+                              }}
+                            />
+                            {episodeLabel(ep)}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
                     <div style={{ marginBottom: "6px" }}>
                       <p style={{ fontSize: "12px", marginBottom: "4px" }}>
                         タグ:
