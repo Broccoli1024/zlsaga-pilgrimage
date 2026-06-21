@@ -79,7 +79,8 @@ export default function SpotDetailPopup({
         const { data: chars } = await supabase
           .from("characters")
           .select("id, name, name_en, color_code")
-          .in("id", charIds);
+          .in("id", charIds)
+          .order("sort_order");
         setCharacters(chars ?? []);
       } else {
         setCharacters([]);

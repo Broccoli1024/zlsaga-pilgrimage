@@ -102,8 +102,14 @@ export default function MapPage() {
       ] = await Promise.all([
         supabase.from("spots").select("*").eq("is_published", true),
         supabase.from("areas").select("id, name, name_en").order("name"),
-        supabase.from("categories").select("id, name, name_en").order("name"),
-        supabase.from("characters").select("id, name, name_en").order("name"),
+        supabase
+          .from("categories")
+          .select("id, name, name_en")
+          .order("sort_order"),
+        supabase
+          .from("characters")
+          .select("id, name, name_en")
+          .order("sort_order"),
         supabase.from("spot_characters").select("spot_id, character_id"),
         supabase
           .from("significance_tags")

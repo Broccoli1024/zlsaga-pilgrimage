@@ -65,7 +65,7 @@ export default function AdminPage() {
   const loadMasters = async () => {
     const [areasRes, categoriesRes, tagsRes] = await Promise.all([
       supabase.from("areas").select("id, name").eq("work_id", WORK_ID),
-      supabase.from("categories").select("id, name"),
+      supabase.from("categories").select("id, name").order("sort_order"),
       supabase.from("significance_tags").select("id, name"),
     ]);
     const loadedAreas = areasRes.data ?? [];
