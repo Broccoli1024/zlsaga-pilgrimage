@@ -37,7 +37,7 @@ interface PreviewRow extends CsvRow {
 
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
-  const [activeTab, setActiveTab] = useState<"csv" | "forms">("csv");
+  const [activeTab, setActiveTab] = useState<"csv" | "forms" | "manage">("csv");
 
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [areas, setAreas] = useState<{ id: string; name: string }[]>([]);
@@ -51,6 +51,14 @@ export default function AdminPage() {
   const [loadingForms, setLoadingForms] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formPreviewRows, setFormPreviewRows] = useState<PreviewRow[]>([]);
+  const [manageSpots, setManageSpots] = useState<any[]>([]);
+  const [manageSpotTags, setManageSpotTags] = useState<
+    { spot_id: string; tag_id: string }[]
+  >([]);
+  const [loadingManage, setLoadingManage] = useState(false);
+  const [editingSpotId, setEditingSpotId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, any>>({});
+  const [editTagIds, setEditTagIds] = useState<string[]>([]);
 
   const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
 
@@ -186,6 +194,78 @@ export default function AdminPage() {
     setImporting(false);
   };
 
+  const handleLoadManageSpots = async () => {
+    setLoadingManage(true);
+    await loadMasters();
+    const { data, error } = await supabase.functions.invoke("manage-spot", {
+      body: { action: "list" },
+    });
+    if (error || data?.error) {
+      console.error("一覧取得エラー:", error || data?.error);
+      setLoadingManage(false);
+      return;
+    }
+    setManageSpots(data.spots);
+    setManageSpotTags(data.spotTags);
+    setLoadingManage(false);
+  };
+
+  const handleDeleteSpot = async (spotId: string, name: string) => {
+    if (
+      !window.confirm(`「${name}」を削除しますか？\nこの操作は取り消せません。`)
+    )
+      return;
+    const { data, error } = await supabase.functions.invoke("manage-spot", {
+      body: { action: "delete", spotId },
+    });
+    if (error || data?.error) {
+      alert(`削除に失敗しました: ${error?.message || data?.error}`);
+      return;
+    }
+    setManageSpots((prev) => prev.filter((s) => s.id !== spotId));
+  };
+
+  const startEdit = (spot: any) => {
+    setEditingSpotId(spot.id);
+    setEditForm({ ...spot });
+    setEditTagIds(
+      manageSpotTags.filter((t) => t.spot_id === spot.id).map((t) => t.tag_id),
+    );
+  };
+
+  const cancelEdit = () => {
+    setEditingSpotId(null);
+    setEditForm({});
+    setEditTagIds([]);
+  };
+
+  const saveEdit = async () => {
+    if (!editingSpotId) return;
+    const { data, error } = await supabase.functions.invoke("manage-spot", {
+      body: {
+        action: "update",
+        spotId: editingSpotId,
+        updates: {
+          name: editForm.name,
+          name_en: editForm.name_en || null,
+          lat: Number(editForm.lat),
+          lng: Number(editForm.lng),
+          area_id: editForm.area_id || null,
+          category_id: editForm.category_id || null,
+          description: editForm.description || null,
+          is_published: !!editForm.is_published,
+        },
+        tagIds: editTagIds,
+      },
+    });
+    if (error || data?.error) {
+      alert(`更新に失敗しました: ${error?.message || data?.error}`);
+      return;
+    }
+    await handleLoadManageSpots();
+    cancelEdit();
+  };
+
   const handleFetchFormResponses = async () => {
     setLoadingForms(true);
     setFormError(null);
@@ -316,11 +396,16 @@ export default function AdminPage() {
           [
             ["csv", "📄 CSV投入"],
             ["forms", "📋 フォーム回答"],
+            ["manage", "🛠️ スポット管理"],
           ] as [typeof activeTab, string][]
         ).map(([key, label]) => (
           <button
             key={key}
-            onClick={() => setActiveTab(key)}
+            onClick={() => {
+              setActiveTab(key);
+              if (key === "manage" && manageSpots.length === 0)
+                handleLoadManageSpots();
+            }}
             style={{
               flex: 1,
               padding: "8px",
@@ -529,6 +614,309 @@ export default function AdminPage() {
               </button>
             </div>
           )}
+        </div>
+      )}
+      {activeTab === "manage" && (
+        <div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: "1rem",
+            }}
+          >
+            <p style={{ fontSize: "13px", color: "#666" }}>
+              登録済みスポット：{manageSpots.length}件
+            </p>
+            <button
+              onClick={handleLoadManageSpots}
+              disabled={loadingManage}
+              style={{
+                padding: "4px 12px",
+                fontSize: "12px",
+                border: "1px solid #2196F3",
+                background: "white",
+                color: "#2196F3",
+                borderRadius: "6px",
+                cursor: "pointer",
+              }}
+            >
+              {loadingManage ? "読み込み中..." : "🔄 再読み込み"}
+            </button>
+          </div>
+
+          <div style={{ maxHeight: "600px", overflowY: "auto" }}>
+            {manageSpots.map((spot) => (
+              <div
+                key={spot.id}
+                style={{
+                  padding: "12px",
+                  marginBottom: "6px",
+                  background: "white",
+                  border: "1px solid #eee",
+                  borderRadius: "8px",
+                }}
+              >
+                {editingSpotId === spot.id ? (
+                  <div>
+                    <input
+                      value={editForm.name ?? ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                      placeholder="スポット名"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "6px",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      <input
+                        value={editForm.lat ?? ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, lat: e.target.value })
+                        }
+                        placeholder="緯度"
+                        style={{ flex: 1, padding: "6px", fontSize: "13px" }}
+                      />
+                      <input
+                        value={editForm.lng ?? ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, lng: e.target.value })
+                        }
+                        placeholder="経度"
+                        style={{ flex: 1, padding: "6px", fontSize: "13px" }}
+                      />
+                    </div>
+                    <select
+                      value={editForm.area_id ?? ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, area_id: e.target.value })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="">エリアなし</option>
+                      {areas.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={editForm.category_id ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          category_id: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    >
+                      <option value="">カテゴリなし</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <textarea
+                      value={editForm.description ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="説明"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                        minHeight: "60px",
+                      }}
+                    />
+                    <div style={{ marginBottom: "6px" }}>
+                      <p style={{ fontSize: "12px", marginBottom: "4px" }}>
+                        タグ:
+                      </p>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "6px",
+                        }}
+                      >
+                        {tags.map((tag) => (
+                          <label
+                            key={tag.id}
+                            style={{
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={editTagIds.includes(tag.id)}
+                              onChange={(e) => {
+                                if (e.target.checked)
+                                  setEditTagIds([...editTagIds, tag.id]);
+                                else
+                                  setEditTagIds(
+                                    editTagIds.filter((id) => id !== tag.id),
+                                  );
+                              }}
+                            />
+                            {tag.name}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <label
+                      style={{
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!editForm.is_published}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            is_published: e.target.checked,
+                          })
+                        }
+                      />
+                      公開する
+                    </label>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        onClick={saveEdit}
+                        style={{
+                          flex: 1,
+                          padding: "6px",
+                          background: "#4CAF50",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                        }}
+                      >
+                        保存
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        style={{
+                          flex: 1,
+                          padding: "6px",
+                          background: "white",
+                          border: "1px solid #ddd",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          fontSize: "13px",
+                        }}
+                      >
+                        キャンセル
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div>
+                      <p
+                        style={{
+                          margin: "0 0 4px",
+                          fontWeight: "bold",
+                          fontSize: "14px",
+                        }}
+                      >
+                        {spot.name}
+                        {!spot.is_published && (
+                          <span
+                            style={{
+                              fontSize: "11px",
+                              color: "#f44336",
+                              marginLeft: "6px",
+                            }}
+                          >
+                            （非公開）
+                          </span>
+                        )}
+                      </p>
+                      <p style={{ margin: 0, fontSize: "11px", color: "#999" }}>
+                        {areas.find((a) => a.id === spot.area_id)?.name ??
+                          "エリア未設定"}{" "}
+                        ・
+                        {categories.find((c) => c.id === spot.category_id)
+                          ?.name ?? "カテゴリ未設定"}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        onClick={() => startEdit(spot)}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: "12px",
+                          border: "1px solid #2196F3",
+                          background: "white",
+                          color: "#2196F3",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        編集
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSpot(spot.id, spot.name)}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: "12px",
+                          border: "1px solid #f44336",
+                          background: "white",
+                          color: "#f44336",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
