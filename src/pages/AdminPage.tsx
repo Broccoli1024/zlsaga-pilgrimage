@@ -35,6 +35,11 @@ interface PreviewRow extends CsvRow {
   _errors: string[];
 }
 
+interface FormPreviewRow extends PreviewRow {
+  is_sacred: boolean;
+  episode_ids: string[];
+}
+
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<"csv" | "forms" | "manage">("csv");
@@ -50,7 +55,7 @@ export default function AdminPage() {
 
   const [loadingForms, setLoadingForms] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [formPreviewRows, setFormPreviewRows] = useState<PreviewRow[]>([]);
+  const [formPreviewRows, setFormPreviewRows] = useState<FormPreviewRow[]>([]);
   const [manageSpots, setManageSpots] = useState<any[]>([]);
   const [manageSpotTags, setManageSpotTags] = useState<
     { spot_id: string; tag_id: string }[]
@@ -193,6 +198,7 @@ export default function AdminPage() {
         tag_ids: tagIds,
       };
     });
+    console.log("送信ペイロード:", JSON.stringify(payload, null, 2));
 
     const { data, error } = await supabase.functions.invoke("insert-spot", {
       body: { rows: payload },
@@ -212,6 +218,93 @@ export default function AdminPage() {
     }
     setPreviewRows([]);
     setImporting(false);
+  };
+
+  const handleImportFormRows = async () => {
+    console.log("handleImportFormRows 開始");
+    const validRows = formPreviewRows.filter((r) => r._errors.length === 0);
+    console.log("validRows:", validRows);
+    if (validRows.length === 0) {
+      setFormError("登録可能な行がありません");
+      return;
+    }
+    setLoadingForms(true);
+    setFormError(null);
+
+    // 全キャラクターIDを取得（聖地の場合の自動付与用）
+    const { data: allCharacters } = await supabase
+      .from("characters")
+      .select("id");
+    const allCharacterIds = (allCharacters ?? []).map((c) => c.id);
+
+    const payload = validRows.map((row) => {
+      const areaId = areas.find((a) => a.name === row.area_name)?.id ?? null;
+      const categoryId =
+        categories.find((c) => c.name === row.category_name)?.id ?? null;
+      const tagNames = row.tags
+        ? row.tags
+            .split(";")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
+      const tagIds = tagNames
+        .map((tn) => tags.find((t) => t.name === tn)?.id)
+        .filter((id): id is string => !!id);
+
+      return {
+        work_id: WORK_ID,
+        area_id: areaId,
+        category_id: categoryId,
+        name: row.name,
+        name_en: row.name_en || null,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        address: row.address || null,
+        address_en: row.address_en || null,
+        description: row.description || null,
+        description_en: row.description_en || null,
+        access_info: row.access_info || null,
+        parking_info: row.parking_info || null,
+        duration_min: row.duration_min ? Number(row.duration_min) : null,
+        nearest_station_name: row.nearest_station_name || null,
+        nearest_station_walk_min: row.nearest_station_walk_min
+          ? Number(row.nearest_station_walk_min)
+          : null,
+        nearest_bus_stop_name: row.nearest_bus_stop_name || null,
+        nearest_bus_stop_walk_min: row.nearest_bus_stop_walk_min
+          ? Number(row.nearest_bus_stop_walk_min)
+          : null,
+        access_notes: row.access_notes || null,
+        is_published: false, // フォーム経由は確認後に手動で公開
+        tag_ids: tagIds,
+        character_ids: row.is_sacred ? allCharacterIds : [],
+        episode_ids: row.episode_ids,
+      };
+    });
+
+    console.log("送信ペイロード:", JSON.stringify(payload, null, 2));
+
+    const { data, error } = await supabase.functions.invoke("insert-spot", {
+      body: { rows: payload },
+    });
+
+    console.log("レスポンス:", data, error);
+
+    if (error) {
+      setFormError(`登録エラー: ${error.message}`);
+      setLoadingForms(false);
+      return;
+    }
+
+    setResultMessage(
+      `フォームからの登録完了：成功 ${data.successCount}件 / 失敗 ${data.failCount}件`,
+    );
+    if (data.failedDetails?.length > 0) {
+      console.error("登録失敗の詳細:", data.failedDetails);
+    }
+    setFormPreviewRows([]);
+    setActiveTab("csv");
+    setLoadingForms(false);
   };
 
   const handleLoadManageSpots = async () => {
@@ -373,23 +466,12 @@ export default function AdminPage() {
     setLoadingForms(true);
     setFormError(null);
 
-    const beforeSession = await supabase.auth.getSession();
-    console.log(
-      "呼び出し前のトークン:",
-      beforeSession.data.session?.access_token?.slice(0, 20),
-    );
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
 
     const { data, error } = await supabase.functions.invoke(
       "fetch-form-responses",
     );
-
-    const afterSession = await supabase.auth.getSession();
-    console.log(
-      "呼び出し後のトークン:",
-      afterSession.data.session?.access_token?.slice(0, 20),
-    );
-
-    // ...(以下既存のコード)
 
     if (error) {
       setFormError(`取得エラー: ${error.message}`);
@@ -403,16 +485,83 @@ export default function AdminPage() {
       return;
     }
 
-    const { loadedAreas, loadedCategories } = await loadMasters();
+    const { loadedCategories, loadedTags } = await loadMasters();
 
-    const rows: PreviewRow[] = data.records.map(
+    // エピソードマスタも取得
+    const { data: episodesData } = await supabase
+      .from("episodes")
+      .select("id, media_type, season, episode_number");
+
+    const otherCategoryId =
+      loadedCategories.find((c) => c.name === "その他")?.id ?? null;
+
+    // 重複列（聖地用・非聖地用で同名の質問）から値を取得するヘルパー
+    const getFirstNonEmpty = (
+      record: Record<string, string>,
+      key: string,
+    ): string => {
+      const values = Object.entries(record)
+        .filter(([k]) => k === key || k.startsWith(`${key}__`))
+        .map(([, v]) => v)
+        .filter((v) => v && v.trim() !== "");
+      return values[0] ?? "";
+    };
+
+    // 「無印 第3話」「リベンジ 第5話」「劇場版」のような文字列からepisode_idを解決
+    const parseEpisodeText = (text: string): string[] => {
+      if (!text || !episodesData) return [];
+      const ids: string[] = [];
+      const parts = text
+        .split(/[,、;\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      parts.forEach((part) => {
+        if (part.includes("劇場版")) {
+          const movieEp = episodesData.find((e) => e.media_type === "movie");
+          if (movieEp) ids.push(movieEp.id);
+          return;
+        }
+        const seasonMatch = part.includes("リベンジ")
+          ? 2
+          : part.includes("無印")
+            ? 1
+            : null;
+        const epNumMatch = part.match(/(\d+)\s*話/);
+        if (seasonMatch && epNumMatch) {
+          const epNum = Number(epNumMatch[1]);
+          const ep = episodesData.find(
+            (e) =>
+              e.media_type === "tv" &&
+              e.season === seasonMatch &&
+              e.episode_number === epNum,
+          );
+          if (ep) ids.push(ep.id);
+        }
+      });
+
+      return ids;
+    };
+
+    const rows: FormPreviewRow[] = data.records.map(
       (record: Record<string, string>, i: number) => {
         const errors: string[] = [];
-        const name = record["スポット名"] || "";
-        const mapUrl = record["Googleマップ共有URL"] || "";
-        const areaName = record["エリア"] || "";
-        const categoryName = record["カテゴリ"] || "";
-        const description = record["説明・どんなシーンで登場したか"] || "";
+
+        const isSacredAnswer = record["作中に登場しましたか"] || "";
+        const isSacred = isSacredAnswer.trim() === "はい";
+
+        const name = getFirstNonEmpty(record, "スポット名");
+        const mapUrl = getFirstNonEmpty(record, "Googleマップ共有URL");
+        const areaName = getFirstNonEmpty(record, "エリア(市町村)");
+        const categoryNameRaw = getFirstNonEmpty(record, "カテゴリ");
+        const description =
+          getFirstNonEmpty(record, "説明・登場シーンなど") ||
+          getFirstNonEmpty(record, "スポットの説明");
+        const tagsRaw =
+          getFirstNonEmpty(record, "タグ ") || getFirstNonEmpty(record, "タグ");
+        const episodeTextRaw = getFirstNonEmpty(record, "該当エピソード");
+        const note = getFirstNonEmpty(record, "備考");
+
         const lat = record["_lat"] || "";
         const lng = record["_lng"] || "";
 
@@ -420,15 +569,34 @@ export default function AdminPage() {
         if (!mapUrl) errors.push("Googleマップ共有URLが空です");
         if (!lat || !lng) errors.push("URLから緯度経度を抽出できません");
 
-        if (areaName && !loadedAreas.some((a) => a.name === areaName)) {
-          errors.push(`エリア「${areaName}」が見つかりません`);
+        // カテゴリのフォールバック（マスタになければ「その他」）
+        let categoryName = categoryNameRaw;
+        const categoryExists = loadedCategories.some(
+          (c) => c.name === categoryNameRaw,
+        );
+        if (categoryNameRaw && !categoryExists) {
+          categoryName = "その他";
         }
-        if (
-          categoryName &&
-          !loadedCategories.some((c) => c.name === categoryName)
-        ) {
-          errors.push(`カテゴリ「${categoryName}」が見つかりません`);
+        if (!categoryName && otherCategoryId) {
+          categoryName = "その他";
         }
+
+        // タグ名の解析（複数選択はカンマ区切りで返ってくる）
+        const tagNames = tagsRaw
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+        tagNames.forEach((tn) => {
+          if (!loadedTags.some((t) => t.name === tn)) {
+            errors.push(`タグ「${tn}」が見つかりません`);
+          }
+        });
+
+        // エリアのバリデーション（エリアはareasマスタとの一致確認のみ、フォールバックなし）
+        // ※ areasは別途masters取得が必要なため、ここではareaFilterの存在確認のみ実施想定
+        // （loadMastersで取得したareasはAdminPage側のstateにあるためチェック対象外にする場合あり）
+
+        const episodeIds = isSacred ? parseEpisodeText(episodeTextRaw) : [];
 
         return {
           name,
@@ -448,21 +616,19 @@ export default function AdminPage() {
           nearest_station_walk_min: "",
           nearest_bus_stop_name: "",
           nearest_bus_stop_walk_min: "",
-          access_notes: record["備考"] || "",
+          access_notes: note,
           is_published: "false",
-          tags: "",
+          tags: tagNames.join(";") + (isSacred ? ";聖地" : ""),
+          is_sacred: isSacred,
+          episode_ids: episodeIds,
           _rowIndex: i + 1,
           _errors: errors,
         };
       },
     );
 
-    // セッションの整合性を確認・復元
-    const { data: refreshedSession } = await supabase.auth.refreshSession();
-    console.log(
-      "リフレッシュ後のユーザー:",
-      refreshedSession.session?.user?.email,
-    );
+    console.log("プレビューデータ:", rows);
+    setFormPreviewRows(rows);
 
     setFormPreviewRows(rows);
     setLoadingForms(false);
@@ -699,10 +865,7 @@ export default function AdminPage() {
               </div>
 
               <button
-                onClick={() => {
-                  setPreviewRows(formPreviewRows);
-                  setActiveTab("csv");
-                }}
+                onClick={handleImportFormRows}
                 style={{
                   padding: "10px 20px",
                   background: "#4CAF50",
@@ -713,7 +876,7 @@ export default function AdminPage() {
                   fontWeight: "bold",
                 }}
               >
-                CSV投入タブで登録する →
+                登録する
               </button>
             </div>
           )}

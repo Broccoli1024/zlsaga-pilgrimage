@@ -147,13 +147,17 @@ Deno.serve(async (req) => {
     const records = await Promise.all(
       rows.map(async (row: string[]) => {
         const obj: Record<string, string> = {};
+        const seenKeys: Record<string, number> = {};
+
         headerRow.forEach((key: string, i: number) => {
-          obj[key] = row[i] ?? "";
+          const count = seenKeys[key] ?? 0;
+          seenKeys[key] = count + 1;
+          const uniqueKey = count === 0 ? key : `${key}__${count}`;
+          obj[uniqueKey] = row[i] ?? "";
         });
 
-        // Googleマップ共有URLを展開して緯度経度を抽出
         const mapUrlKey = Object.keys(obj).find((k) =>
-          k.includes("Googleマップ"),
+          k.startsWith("Googleマップ"),
         );
         if (mapUrlKey && obj[mapUrlKey]) {
           const resolvedUrl = await resolveShortUrl(obj[mapUrlKey]);

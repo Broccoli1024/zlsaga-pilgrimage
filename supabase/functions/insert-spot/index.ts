@@ -95,14 +95,40 @@ Deno.serve(async (req) => {
       }
 
       if (row.tag_ids && row.tag_ids.length > 0) {
-        await supabaseAdmin
-          .from("spot_significance_tags")
+        await supabaseAdmin.from("spot_significance_tags").insert(
+          row.tag_ids.map((tagId: string) => ({
+            spot_id: insertedSpot.id,
+            tag_id: tagId,
+          })),
+        );
+      }
+
+      if (row.character_ids && row.character_ids.length > 0) {
+        const { error: charError } = await supabaseAdmin
+          .from("spot_characters")
           .insert(
-            row.tag_ids.map((tagId: string) => ({
+            row.character_ids.map((characterId: string) => ({
               spot_id: insertedSpot.id,
-              tag_id: tagId,
+              character_id: characterId,
             })),
           );
+        if (charError) {
+          console.error("キャラクター登録エラー:", charError);
+        }
+      }
+
+      if (row.episode_ids && row.episode_ids.length > 0) {
+        const { error: epError } = await supabaseAdmin
+          .from("spot_episodes")
+          .insert(
+            row.episode_ids.map((episodeId: string) => ({
+              spot_id: insertedSpot.id,
+              episode_id: episodeId,
+            })),
+          );
+        if (epError) {
+          console.error("エピソード登録エラー:", epError);
+        }
       }
 
       successCount++;
