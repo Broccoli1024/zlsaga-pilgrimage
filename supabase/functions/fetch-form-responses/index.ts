@@ -120,6 +120,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // service_roleクライアントで既取得タイムスタンプを確認
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const { data: loggedResponses } = await supabaseAdmin
+      .from("form_response_log")
+      .select("response_timestamp");
+
+    const loggedTimestamps = new Set(
+      (loggedResponses ?? []).map((r: any) => r.response_timestamp),
+    );
+
     const accessToken = await getAccessToken();
     const sheetId = Deno.env.get("GOOGLE_SHEET_ID")!;
     const range = "フォームの回答 1";
@@ -171,7 +185,24 @@ Deno.serve(async (req) => {
       }),
     );
 
-    return new Response(JSON.stringify({ records }), {
+    // 未取得（form_response_logに記録のない）回答だけに絞る
+    const newRecords = records.filter((r: Record<string, string>) => {
+      const ts = r["タイムスタンプ"];
+      return ts && !loggedTimestamps.has(ts);
+    });
+
+    // 新しい回答をログに記録（fetchした時点で記録する）
+    if (newRecords.length > 0) {
+      await supabaseAdmin.from("form_response_log").insert(
+        newRecords.map((r: Record<string, string>) => ({
+          response_timestamp: r["タイムスタンプ"],
+          spot_name: r["スポット名"] || r["スポット名__1"] || "",
+          status: "fetched",
+        })),
+      );
+    }
+
+    return new Response(JSON.stringify({ records: newRecords }), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   } catch (err) {
