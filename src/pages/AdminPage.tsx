@@ -48,6 +48,10 @@ export default function AdminPage() {
   const [importing, setImporting] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
+  const [loadingForms, setLoadingForms] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formPreviewRows, setFormPreviewRows] = useState<PreviewRow[]>([]);
+
   const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
 
   const loadMasters = async () => {
@@ -119,75 +123,166 @@ export default function AdminPage() {
     setImporting(true);
     setResultMessage(null);
 
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const row of validRows) {
+    const payload = validRows.map((row) => {
       const areaId = areas.find((a) => a.name === row.area_name)?.id ?? null;
       const categoryId =
         categories.find((c) => c.name === row.category_name)?.id ?? null;
+      const tagNames = row.tags
+        ? row.tags
+            .split(";")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [];
+      const tagIds = tagNames
+        .map((tn) => tags.find((t) => t.name === tn)?.id)
+        .filter((id): id is string => !!id);
 
-      const { data: insertedSpot, error } = await supabase
-        .from("spots")
-        .insert({
-          work_id: WORK_ID,
-          area_id: areaId,
-          category_id: categoryId,
-          name: row.name,
-          name_en: row.name_en || null,
-          lat: Number(row.lat),
-          lng: Number(row.lng),
-          address: row.address || null,
-          address_en: row.address_en || null,
-          description: row.description || null,
-          description_en: row.description_en || null,
-          access_info: row.access_info || null,
-          parking_info: row.parking_info || null,
-          duration_min: row.duration_min ? Number(row.duration_min) : null,
-          nearest_station_name: row.nearest_station_name || null,
-          nearest_station_walk_min: row.nearest_station_walk_min
-            ? Number(row.nearest_station_walk_min)
-            : null,
-          nearest_bus_stop_name: row.nearest_bus_stop_name || null,
-          nearest_bus_stop_walk_min: row.nearest_bus_stop_walk_min
-            ? Number(row.nearest_bus_stop_walk_min)
-            : null,
-          access_notes: row.access_notes || null,
-          is_published: row.is_published?.toLowerCase() === "true",
-        })
-        .select()
-        .single();
+      return {
+        work_id: WORK_ID,
+        area_id: areaId,
+        category_id: categoryId,
+        name: row.name,
+        name_en: row.name_en || null,
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        address: row.address || null,
+        address_en: row.address_en || null,
+        description: row.description || null,
+        description_en: row.description_en || null,
+        access_info: row.access_info || null,
+        parking_info: row.parking_info || null,
+        duration_min: row.duration_min ? Number(row.duration_min) : null,
+        nearest_station_name: row.nearest_station_name || null,
+        nearest_station_walk_min: row.nearest_station_walk_min
+          ? Number(row.nearest_station_walk_min)
+          : null,
+        nearest_bus_stop_name: row.nearest_bus_stop_name || null,
+        nearest_bus_stop_walk_min: row.nearest_bus_stop_walk_min
+          ? Number(row.nearest_bus_stop_walk_min)
+          : null,
+        access_notes: row.access_notes || null,
+        is_published: row.is_published?.toLowerCase() === "true",
+        tag_ids: tagIds,
+      };
+    });
 
-      if (error || !insertedSpot) {
-        failCount++;
-        continue;
-      }
+    const { data, error } = await supabase.functions.invoke("insert-spot", {
+      body: { rows: payload },
+    });
 
-      if (row.tags) {
-        const tagNames = row.tags
-          .split(";")
-          .map((t) => t.trim())
-          .filter(Boolean);
-        const tagIds = tagNames
-          .map((tn) => tags.find((t) => t.name === tn)?.id)
-          .filter((id): id is string => !!id);
-
-        if (tagIds.length > 0) {
-          await supabase.from("spot_significance_tags").insert(
-            tagIds.map((tagId) => ({
-              spot_id: insertedSpot.id,
-              tag_id: tagId,
-            })),
-          );
-        }
-      }
-
-      successCount++;
+    if (error) {
+      setResultMessage(`登録エラー: ${error.message}`);
+      setImporting(false);
+      return;
     }
 
-    setResultMessage(`登録完了：成功 ${successCount}件 / 失敗 ${failCount}件`);
+    setResultMessage(
+      `登録完了：成功 ${data.successCount}件 / 失敗 ${data.failCount}件`,
+    );
+    if (data.failedDetails?.length > 0) {
+      console.error("登録失敗の詳細:", data.failedDetails);
+    }
     setPreviewRows([]);
     setImporting(false);
+  };
+
+  const handleFetchFormResponses = async () => {
+    setLoadingForms(true);
+    setFormError(null);
+
+    const beforeSession = await supabase.auth.getSession();
+    console.log(
+      "呼び出し前のトークン:",
+      beforeSession.data.session?.access_token?.slice(0, 20),
+    );
+
+    const { data, error } = await supabase.functions.invoke(
+      "fetch-form-responses",
+    );
+
+    const afterSession = await supabase.auth.getSession();
+    console.log(
+      "呼び出し後のトークン:",
+      afterSession.data.session?.access_token?.slice(0, 20),
+    );
+
+    // ...(以下既存のコード)
+
+    if (error) {
+      setFormError(`取得エラー: ${error.message}`);
+      setLoadingForms(false);
+      return;
+    }
+
+    if (data.error) {
+      setFormError(`取得エラー: ${data.error}`);
+      setLoadingForms(false);
+      return;
+    }
+
+    const { loadedAreas, loadedCategories } = await loadMasters();
+
+    const rows: PreviewRow[] = data.records.map(
+      (record: Record<string, string>, i: number) => {
+        const errors: string[] = [];
+        const name = record["スポット名"] || "";
+        const mapUrl = record["Googleマップ共有URL"] || "";
+        const areaName = record["エリア"] || "";
+        const categoryName = record["カテゴリ"] || "";
+        const description = record["説明・どんなシーンで登場したか"] || "";
+        const lat = record["_lat"] || "";
+        const lng = record["_lng"] || "";
+
+        if (!name) errors.push("スポット名が空です");
+        if (!mapUrl) errors.push("Googleマップ共有URLが空です");
+        if (!lat || !lng) errors.push("URLから緯度経度を抽出できません");
+
+        if (areaName && !loadedAreas.some((a) => a.name === areaName)) {
+          errors.push(`エリア「${areaName}」が見つかりません`);
+        }
+        if (
+          categoryName &&
+          !loadedCategories.some((c) => c.name === categoryName)
+        ) {
+          errors.push(`カテゴリ「${categoryName}」が見つかりません`);
+        }
+
+        return {
+          name,
+          name_en: "",
+          lat,
+          lng,
+          address: "",
+          address_en: "",
+          area_name: areaName,
+          category_name: categoryName,
+          description,
+          description_en: "",
+          access_info: "",
+          parking_info: "",
+          duration_min: "",
+          nearest_station_name: "",
+          nearest_station_walk_min: "",
+          nearest_bus_stop_name: "",
+          nearest_bus_stop_walk_min: "",
+          access_notes: record["備考"] || "",
+          is_published: "false",
+          tags: "",
+          _rowIndex: i + 1,
+          _errors: errors,
+        };
+      },
+    );
+
+    // セッションの整合性を確認・復元
+    const { data: refreshedSession } = await supabase.auth.refreshSession();
+    console.log(
+      "リフレッシュ後のユーザー:",
+      refreshedSession.session?.user?.email,
+    );
+
+    setFormPreviewRows(rows);
+    setLoadingForms(false);
   };
 
   if (!user) {
@@ -342,9 +437,98 @@ export default function AdminPage() {
 
       {activeTab === "forms" && (
         <div>
-          <p style={{ color: "#999", fontSize: "13px" }}>
-            フォーム回答確認機能（実装予定）
-          </p>
+          <button
+            onClick={handleFetchFormResponses}
+            disabled={loadingForms}
+            style={{
+              padding: "10px 20px",
+              marginBottom: "1rem",
+              background: loadingForms ? "#ccc" : "#2196F3",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: loadingForms ? "not-allowed" : "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            {loadingForms ? "取得中..." : "📥 フォーム回答を取得"}
+          </button>
+
+          {formError && (
+            <p style={{ color: "red", fontSize: "13px", marginBottom: "1rem" }}>
+              {formError}
+            </p>
+          )}
+
+          {formPreviewRows.length > 0 && (
+            <div>
+              <p style={{ fontSize: "13px", marginBottom: "8px" }}>
+                回答件数：{formPreviewRows.length}件 （エラーなし：
+                {formPreviewRows.filter((r) => r._errors.length === 0).length}
+                件）
+              </p>
+
+              <div
+                style={{
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                  marginBottom: "1rem",
+                }}
+              >
+                {formPreviewRows.map((row) => (
+                  <div
+                    key={row._rowIndex}
+                    style={{
+                      padding: "8px",
+                      marginBottom: "4px",
+                      borderRadius: "6px",
+                      background:
+                        row._errors.length > 0 ? "#FFEBEE" : "#E8F5E9",
+                      fontSize: "12px",
+                    }}
+                  >
+                    <strong>
+                      #{row._rowIndex} {row.name}
+                    </strong>
+                    <div style={{ color: "#666", marginTop: "2px" }}>
+                      {row.description?.slice(0, 60)}...
+                    </div>
+                    {row._errors.length > 0 && (
+                      <ul
+                        style={{
+                          margin: "4px 0 0",
+                          paddingLeft: "16px",
+                          color: "#C62828",
+                        }}
+                      >
+                        {row._errors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  setPreviewRows(formPreviewRows);
+                  setActiveTab("csv");
+                }}
+                style={{
+                  padding: "10px 20px",
+                  background: "#4CAF50",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                CSV投入タブで登録する →
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
