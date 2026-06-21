@@ -513,12 +513,30 @@ export default function MapPage() {
       >
         <LangToggle />
         {user ? (
-          <Link
-            to="/mypage"
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            👤 {user.email}
-          </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <Link
+              to="/mypage"
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              👤 {user.email}
+            </Link>
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+              }}
+              style={{
+                padding: "2px 8px",
+                fontSize: "11px",
+                border: "1px solid #ddd",
+                borderRadius: "4px",
+                background: "white",
+                cursor: "pointer",
+                color: "#999",
+              }}
+            >
+              ログアウト
+            </button>
+          </div>
         ) : (
           <a href="/login">{t("map.login")}</a>
         )}

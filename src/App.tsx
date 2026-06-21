@@ -9,6 +9,7 @@ import RouteNewPage from "./pages/RouteNewPage";
 import RouteResultPage from "./pages/RouteResultPage";
 import MyPage from "./pages/MyPage";
 import LoginPage from "./pages/LoginPage";
+import AdminPage from "./pages/AdminPage";
 
 function App() {
   const setUser = useAuthStore((state) => state.setUser);
@@ -35,6 +36,7 @@ function App() {
         <Route path="/routes/:id" element={<RouteResultPage />} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
     </BrowserRouter>
   );
