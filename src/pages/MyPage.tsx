@@ -51,10 +51,17 @@ export default function MyPage() {
   const [visitLogs, setVisitLogs] = useState<VisitLog[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
-  const [totalSpots, setTotalSpots] = useState(0);
   const [activeTab, setActiveTab] = useState<"spots" | "history" | "routes">(
     "spots",
   );
+  const [significanceTags, setSignificanceTags] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [spotTags, setSpotTags] = useState<
+    { spot_id: string; tag_id: string }[]
+  >([]);
+  const [allSpots, setAllSpots] = useState<Spot[]>([]);
+  const [showMainOnly, setShowMainOnly] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -101,16 +108,26 @@ export default function MyPage() {
         .order("created_at", { ascending: false });
       if (routeData) setRoutes(routeData);
 
-      const { count } = await supabase
-        .from("spots")
-        .select("*", { count: "exact", head: true })
-        .eq("is_published", true);
-      if (count !== null) setTotalSpots(count);
-
       const { data: areaData } = await supabase
         .from("areas")
         .select("id, name, name_en");
       if (areaData) setAreas(areaData);
+
+      const { data: tagsData } = await supabase
+        .from("significance_tags")
+        .select("id, name");
+      if (tagsData) setSignificanceTags(tagsData);
+
+      const { data: spotTagsData } = await supabase
+        .from("spot_significance_tags")
+        .select("spot_id, tag_id");
+      if (spotTagsData) setSpotTags(spotTagsData);
+
+      const { data: allSpotsData } = await supabase
+        .from("spots")
+        .select("*")
+        .eq("is_published", true);
+      if (allSpotsData) setAllSpots(allSpotsData);
     };
 
     fetchData();
@@ -125,14 +142,35 @@ export default function MyPage() {
     );
   }
 
+  const mainTagId = significanceTags.find((t) => t.name === "メイン")?.id;
+
+  const isMainSpot = (spotId: string): boolean => {
+    if (!mainTagId) return false;
+    return spotTags.some(
+      (st) => st.spot_id === spotId && st.tag_id === mainTagId,
+    );
+  };
+
+  // 表示モードに応じた対象スポット
+  const targetSpots = showMainOnly
+    ? allSpots.filter((s) => isMainSpot(s.id))
+    : allSpots;
+
+  const visitedTargetCount = checkins.filter(
+    (c) => c.spot && targetSpots.some((s) => s.id === c.spot_id),
+  ).length;
+
   const areaProgress = areas
     .map((area) => {
-      const visitedInArea = checkins.filter(
-        (c) => c.spot?.area_id === area.id,
+      const areaTargetSpots = targetSpots.filter((s) => s.area_id === area.id);
+      const areaVisitedCount = checkins.filter(
+        (c) =>
+          c.spot?.area_id === area.id &&
+          targetSpots.some((s) => s.id === c.spot_id),
       ).length;
-      return { area, visited: visitedInArea };
+      return { area, visited: areaVisitedCount, total: areaTargetSpots.length };
     })
-    .filter((a) => a.visited > 0);
+    .filter((a) => a.total > 0);
 
   return (
     <div style={{ maxWidth: "600px", margin: "0 auto", padding: "1.5rem" }}>
@@ -147,12 +185,13 @@ export default function MyPage() {
           background: "#E3F2FD",
           borderRadius: "8px",
           padding: "16px",
-          marginBottom: "1.5rem",
+          marginBottom: "1rem",
           textAlign: "center",
         }}
       >
         <p style={{ margin: "0 0 4px", fontSize: "13px", color: "#1565C0" }}>
           {t("mypage.visitedSpots")}
+          {showMainOnly ? "（メインのみ）" : "（全件）"}
         </p>
         <p
           style={{
@@ -162,10 +201,34 @@ export default function MyPage() {
             color: "#1565C0",
           }}
         >
-          {checkins.length}{" "}
-          <span style={{ fontSize: "16px" }}>/ {totalSpots}</span>
+          {visitedTargetCount}{" "}
+          <span style={{ fontSize: "16px" }}>/ {targetSpots.length}</span>
+          {targetSpots.length > 0 && (
+            <span
+              style={{ fontSize: "16px", marginLeft: "8px", color: "#1976D2" }}
+            >
+              ({Math.round((visitedTargetCount / targetSpots.length) * 100)}%)
+            </span>
+          )}
         </p>
       </div>
+
+      <button
+        onClick={() => setShowMainOnly(!showMainOnly)}
+        style={{
+          width: "100%",
+          padding: "8px",
+          marginBottom: "1.5rem",
+          background: "white",
+          border: "1px solid #2196F3",
+          color: "#2196F3",
+          borderRadius: "8px",
+          cursor: "pointer",
+          fontSize: "13px",
+        }}
+      >
+        🔄 {showMainOnly ? "全件表示に切替" : "メインのみ表示に切替"}
+      </button>
 
       <div style={{ display: "flex", gap: "4px", marginBottom: "1rem" }}>
         {(
@@ -236,7 +299,7 @@ export default function MyPage() {
 
           {areaProgress.length > 0 && (
             <div style={{ marginBottom: "1rem" }}>
-              {areaProgress.map(({ area, visited }) => (
+              {areaProgress.map(({ area, visited, total }) => (
                 <div
                   key={area.id}
                   style={{
@@ -249,8 +312,12 @@ export default function MyPage() {
                 >
                   <span>{isEn ? (area.name_en ?? area.name) : area.name}</span>
                   <span style={{ color: "#999" }}>
-                    {visited}
-                    {t("mypage.visitedCount")}
+                    {visited} / {total}
+                    {total > 0 && (
+                      <span style={{ marginLeft: "6px", color: "#bbb" }}>
+                        ({Math.round((visited / total) * 100)}%)
+                      </span>
+                    )}
                   </span>
                 </div>
               ))}
