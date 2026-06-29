@@ -81,6 +81,7 @@ export default function MapPage() {
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [useTolls, setUseTolls] = useState(true);
+  const [orderMode, setOrderMode] = useState<"auto" | "manual">("auto");
 
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
@@ -433,7 +434,10 @@ export default function MapPage() {
         }
       }
 
-      const ordered = optimizeOrder(selectedForRoute, timeMap);
+      const ordered =
+        orderMode === "auto"
+          ? optimizeOrder(selectedForRoute, timeMap)
+          : selectedForRoute;
 
       // 確定した順序でジオメトリ付きのlegsを取得
       const legs: LegResult[] = [];
@@ -651,6 +655,43 @@ export default function MapPage() {
 
               {selectedForRoute.length >= 2 && (
                 <>
+                  {/* 順序決定モード */}
+                  <p
+                    style={{
+                      margin: "10px 0 4px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    巡礼順
+                  </p>
+                  <div
+                    style={{ display: "flex", gap: "6px", marginBottom: "8px" }}
+                  >
+                    {(
+                      [
+                        ["auto", "🤖 自動で最適化"],
+                        ["manual", "✋ 選んだ順番のまま"],
+                      ] as [typeof orderMode, string][]
+                    ).map(([mode, label]) => (
+                      <button
+                        key={mode}
+                        onClick={() => setOrderMode(mode)}
+                        style={{
+                          flex: 1,
+                          padding: "6px",
+                          fontSize: "11px",
+                          borderRadius: "6px",
+                          border: "1px solid",
+                          borderColor: orderMode === mode ? "#2196F3" : "#ddd",
+                          background: orderMode === mode ? "#E3F2FD" : "white",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   {/* 移動手段 */}
                   <p
                     style={{
