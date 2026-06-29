@@ -421,6 +421,7 @@ export default function AdminPage() {
           area_id: editForm.area_id || null,
           category_id: editForm.category_id || null,
           description: editForm.description || null,
+          description_en: editForm.description_en || null,
           duration_min: editForm.duration_min
             ? Number(editForm.duration_min)
             : null,
@@ -606,7 +607,7 @@ export default function AdminPage() {
 
         return {
           name,
-          name_en: "",
+          name_en: record["_name_en"] || "",
           lat,
           lng,
           address: "",
@@ -614,10 +615,10 @@ export default function AdminPage() {
           area_name: areaName,
           category_name: categoryName,
           description,
-          description_en: "",
+          description_en: record["_description_en"] || "",
           access_info: "",
           parking_info: "",
-          duration_min: durationText, // ← 変更
+          duration_min: durationText,
           nearest_station_name: "",
           nearest_station_walk_min: "",
           nearest_bus_stop_name: "",
@@ -850,6 +851,11 @@ export default function AdminPage() {
                     <strong>
                       #{row._rowIndex} {row.name}
                     </strong>
+                    {row.name_en && (
+                      <div style={{ color: "#2196F3", fontSize: "11px" }}>
+                        EN: {row.name_en}
+                      </div>
+                    )}
                     <div style={{ color: "#666", marginTop: "2px" }}>
                       {row.description?.slice(0, 60)}...
                     </div>
@@ -944,6 +950,19 @@ export default function AdminPage() {
                         fontSize: "13px",
                       }}
                     />
+                    <input
+                      value={editForm.name_en ?? ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name_en: e.target.value })
+                      }
+                      placeholder="スポット名（英語）"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    />
                     <div
                       style={{
                         display: "flex",
@@ -1018,6 +1037,23 @@ export default function AdminPage() {
                         })
                       }
                       placeholder="説明"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                        minHeight: "60px",
+                      }}
+                    />
+                    <textarea
+                      value={editForm.description_en ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          description_en: e.target.value,
+                        })
+                      }
+                      placeholder="説明（英語）"
                       style={{
                         width: "100%",
                         padding: "6px",

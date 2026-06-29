@@ -88,6 +88,30 @@ function extractCoordinates(url: string): { lat: string; lng: string } | null {
   return { lat: match[1], lng: match[2] };
 }
 
+// DeepL APIで日本語テキストを英語に翻訳
+async function translateToEnglish(text: string): Promise<string> {
+  if (!text || text.trim() === "") return "";
+  const apiKey = Deno.env.get("DEEPL_API_KEY")!;
+  try {
+    const res = await fetch("https://api-free.deepl.com/v2/translate", {
+      method: "POST",
+      headers: {
+        Authorization: `DeepL-Auth-Key ${apiKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        text,
+        source_lang: "JA",
+        target_lang: "EN-US",
+      }),
+    });
+    const data = await res.json();
+    return data.translations?.[0]?.text ?? "";
+  } catch {
+    return "";
+  }
+}
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -158,18 +182,27 @@ Deno.serve(async (req) => {
     }
 
     const [headerRow, ...rows] = sheetData.values;
-    const records = await Promise.all(
-      rows.map(async (row: string[]) => {
-        const obj: Record<string, string> = {};
-        const seenKeys: Record<string, number> = {};
+    const records = rows.map((row: string[]) => {
+      const obj: Record<string, string> = {};
+      const seenKeys: Record<string, number> = {};
+      headerRow.forEach((key: string, i: number) => {
+        const count = seenKeys[key] ?? 0;
+        seenKeys[key] = count + 1;
+        const uniqueKey = count === 0 ? key : `${key}__${count}`;
+        obj[uniqueKey] = row[i] ?? "";
+      });
+      return obj;
+    });
 
-        headerRow.forEach((key: string, i: number) => {
-          const count = seenKeys[key] ?? 0;
-          seenKeys[key] = count + 1;
-          const uniqueKey = count === 0 ? key : `${key}__${count}`;
-          obj[uniqueKey] = row[i] ?? "";
-        });
+    // 未取得の回答だけに絞る
+    const newRecordsRaw = records.filter((r: Record<string, string>) => {
+      const ts = r["タイムスタンプ"];
+      return ts && !loggedTimestamps.has(ts);
+    });
 
+    // 未取得の回答だけ、URL展開・翻訳処理を行う
+    const newRecords = await Promise.all(
+      newRecordsRaw.map(async (obj: Record<string, string>) => {
         const mapUrlKey = Object.keys(obj).find((k) =>
           k.startsWith("Googleマップ"),
         );
@@ -181,15 +214,20 @@ Deno.serve(async (req) => {
           obj["_lng"] = coords?.lng ?? "";
         }
 
+        const nameKey = Object.keys(obj).find(
+          (k) => k === "スポット名" || k.startsWith("スポット名__"),
+        );
+        const name = nameKey ? obj[nameKey] : "";
+        const descKey = Object.keys(obj).find((k) => k.includes("説明"));
+        const description = descKey ? obj[descKey] : "";
+
+        if (name) obj["_name_en"] = await translateToEnglish(name);
+        if (description)
+          obj["_description_en"] = await translateToEnglish(description);
+
         return obj;
       }),
     );
-
-    // 未取得（form_response_logに記録のない）回答だけに絞る
-    const newRecords = records.filter((r: Record<string, string>) => {
-      const ts = r["タイムスタンプ"];
-      return ts && !loggedTimestamps.has(ts);
-    });
 
     // 新しい回答をログに記録（fetchした時点で記録する）
     if (newRecords.length > 0) {
