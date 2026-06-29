@@ -82,6 +82,9 @@ export default function MapPage() {
   const [genError, setGenError] = useState<string | null>(null);
   const [useTolls, setUseTolls] = useState(true);
   const [orderMode, setOrderMode] = useState<"auto" | "manual">("auto");
+  const [userDurations, setUserDurations] = useState<Record<string, number>>(
+    {},
+  );
 
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
@@ -146,6 +149,21 @@ export default function MapPage() {
       setCheckedInSpots(map);
     };
     fetchCheckins();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchUserDurations = async () => {
+      const { data } = await supabase
+        .from("user_spot_durations")
+        .select("spot_id, duration_min");
+      const map: Record<string, number> = {};
+      data?.forEach((d) => {
+        map[d.spot_id] = d.duration_min;
+      });
+      setUserDurations(map);
+    };
+    fetchUserDurations();
   }, [user]);
 
   const handleCheckin = async (spot: Spot) => {
@@ -293,6 +311,10 @@ export default function MapPage() {
       getSpotTagNames,
     ],
   );
+
+  const getDurationForSpot = (spot: Spot): number => {
+    return userDurations[spot.id] ?? spot.duration_min ?? 30;
+  };
 
   const filteredSpots = spots.filter(matchesFilter);
 
@@ -448,7 +470,7 @@ export default function MapPage() {
 
       const totalTravelMin = legs.reduce((sum, leg) => sum + leg.minutes, 0);
       const totalStayMin = ordered.reduce(
-        (sum, s) => sum + (s.duration_min ?? 30),
+        (sum, s) => sum + getDurationForSpot(s),
         0,
       );
       const totalMin = totalTravelMin + totalStayMin;
@@ -644,6 +666,36 @@ export default function MapPage() {
                 >
                   <span>{i + 1}.</span>
                   <span style={{ flex: 1 }}>{spot.name}</span>
+                  <input
+                    type="number"
+                    value={getDurationForSpot(spot)}
+                    onChange={(e) => {
+                      const newVal = Number(e.target.value);
+                      setUserDurations((prev) => ({
+                        ...prev,
+                        [spot.id]: newVal,
+                      }));
+                    }}
+                    onBlur={async (e) => {
+                      if (!user) return;
+                      const newVal = Number(e.target.value);
+                      await supabase.from("user_spot_durations").upsert(
+                        {
+                          user_id: user.id,
+                          spot_id: spot.id,
+                          duration_min: newVal,
+                        },
+                        { onConflict: "user_id,spot_id" },
+                      );
+                    }}
+                    style={{
+                      width: "40px",
+                      fontSize: "11px",
+                      padding: "2px",
+                      textAlign: "right",
+                    }}
+                  />
+                  <span style={{ fontSize: "10px", color: "#999" }}>分</span>
                   <span
                     onClick={() => handleMarkerClickForRoute(spot)}
                     style={{ cursor: "pointer", color: "#f44336" }}
@@ -889,7 +941,10 @@ export default function MapPage() {
                     >
                       {i + 1}
                     </span>
-                    <span>{spot.name}</span>
+                    <span style={{ flex: 1 }}>{spot.name}</span>
+                    <span style={{ fontSize: "11px", color: "#999" }}>
+                      ⏱ {getDurationForSpot(spot)}分
+                    </span>
                   </div>
                 </div>
               ))}
