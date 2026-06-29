@@ -46,6 +46,8 @@ interface TransitOption {
   arrivalSecs: number;
   durationSecs: number;
   transferCount: number;
+  accessWalkSecs?: number;
+  egressWalkSecs?: number;
   legs: {
     kind: "transit" | "walk";
     routeName?: string;
@@ -107,6 +109,9 @@ export default function MapPage() {
     now.setMinutes(now.getMinutes() + 10); // 10分後をデフォルトに
     return now.toISOString().slice(0, 16);
   });
+  const [transitLegs, setTransitLegs] = useState<(TransitOption | null)[]>([]);
+  const [editingLegIndex, setEditingLegIndex] = useState<number | null>(null);
+  const [legCandidates, setLegCandidates] = useState<TransitOption[]>([]);
 
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
@@ -457,11 +462,134 @@ export default function MapPage() {
     try {
       const res = await fetch(url);
       const data = await res.json();
-      return data.journeys ?? [];
+      const journeys: TransitOption[] = data.journeys ?? [];
+      return journeys.filter((j) => !isWalkOnly(j));
     } catch (err) {
       console.error("Transit API エラー:", err);
       return [];
     }
+  };
+
+  // 候補が「電車・バスを一切使わない（徒歩のみ）」かどうかを判定
+  const isWalkOnly = (option: TransitOption): boolean => {
+    return option.legs.every((l) => l.kind === "walk");
+  };
+
+  // 確定した順序のスポットに対して、各区間の最速候補を連鎖的に計算
+  const calculateTransitChain = async (
+    orderedSpots: Spot[],
+    startDateTime: string,
+  ): Promise<(TransitOption | null)[]> => {
+    const { date, time } = parseDateTimeInput(startDateTime);
+    let currentDate = date;
+    let currentTime = time;
+    const legs: (TransitOption | null)[] = [];
+
+    for (let i = 0; i < orderedSpots.length - 1; i++) {
+      const options = await fetchTransitOptions(
+        orderedSpots[i],
+        orderedSpots[i + 1],
+        currentDate,
+        currentTime,
+      );
+      const best = options[0] ?? null;
+      legs.push(best);
+
+      if (best) {
+        const stayMin = getDurationForSpot(orderedSpots[i + 1]);
+        const nextDepartureSecs = best.arrivalSecs + stayMin * 60;
+        currentTime = secsToTimeStr(nextDepartureSecs);
+        if (nextDepartureSecs >= 86400) {
+          const d = new Date(
+            `${currentDate.slice(0, 4)}-${currentDate.slice(4, 6)}-${currentDate.slice(6, 8)}`,
+          );
+          d.setDate(d.getDate() + 1);
+          currentDate = d.toISOString().slice(0, 10).replace(/-/g, "");
+        }
+      }
+      // bestがnullの場合（見つからない区間）は、currentTimeを更新せず次の区間も同じ時刻で検索を試みる
+    }
+
+    return legs;
+  };
+
+  // 指定した区間の候補を3つ取得し、選択UIを表示する
+  const handleEditLeg = async (legIndex: number) => {
+    if (!routeResult) return;
+    const fromSpot = routeResult.orderedSpots[legIndex];
+    const toSpot = routeResult.orderedSpots[legIndex + 1];
+
+    // その区間の出発時刻は、前の区間の到着時刻＋滞在時間（最初の区間はdepartureDateTimeを使う）
+    let date: string, time: string;
+    if (legIndex === 0) {
+      const parsed = parseDateTimeInput(departureDateTime);
+      date = parsed.date;
+      time = parsed.time;
+    } else {
+      const prevLeg = transitLegs[legIndex - 1];
+      const stayMin = getDurationForSpot(fromSpot);
+      const departSecs = prevLeg.arrivalSecs + stayMin * 60;
+      time = secsToTimeStr(departSecs);
+      date = parseDateTimeInput(departureDateTime).date; // 簡易的に同日扱い（日付超えは別途対応）
+    }
+
+    const options = await fetchTransitOptions(fromSpot, toSpot, date, time);
+    setLegCandidates(options);
+    setEditingLegIndex(legIndex);
+  };
+
+  // 候補を選択し、それ以降の区間を再計算する
+  const handleSelectCandidate = async (selected: TransitOption) => {
+    if (editingLegIndex === null || !routeResult) return;
+
+    const newLegs = [...transitLegs];
+    newLegs[editingLegIndex] = selected;
+
+    // 選んだ区間より後ろを再計算
+    const remainingSpots = routeResult.orderedSpots.slice(editingLegIndex + 1);
+    let currentArrivalSecs = selected.arrivalSecs;
+    let currentDate = parseDateTimeInput(departureDateTime).date;
+
+    for (let i = 0; i < remainingSpots.length - 1; i++) {
+      const stayMin = getDurationForSpot(remainingSpots[i]);
+      const departSecs = currentArrivalSecs + stayMin * 60;
+      const time = secsToTimeStr(departSecs);
+      if (departSecs >= 86400) {
+        const d = new Date(
+          `${currentDate.slice(0, 4)}-${currentDate.slice(4, 6)}-${currentDate.slice(6, 8)}`,
+        );
+        d.setDate(d.getDate() + 1);
+        currentDate = d.toISOString().slice(0, 10).replace(/-/g, "");
+      }
+      const options = await fetchTransitOptions(
+        remainingSpots[i],
+        remainingSpots[i + 1],
+        currentDate,
+        time,
+      );
+      const best = options[0];
+      if (!best) break;
+      newLegs[editingLegIndex + 1 + i] = best;
+      currentArrivalSecs = best.arrivalSecs;
+    }
+
+    setTransitLegs(newLegs);
+    setEditingLegIndex(null);
+    setLegCandidates([]);
+
+    // 合計時間を再計算
+    const totalTravelMin = newLegs.reduce(
+      (sum, l) => sum + l.durationSecs / 60,
+      0,
+    );
+    const totalStayMin = routeResult.orderedSpots.reduce(
+      (sum, s) => sum + getDurationForSpot(s),
+      0,
+    );
+    setRouteResult({
+      ...routeResult,
+      totalMin: Math.round(totalTravelMin + totalStayMin),
+    });
   };
 
   // Greedy法でルートを最適化
@@ -496,64 +624,133 @@ export default function MapPage() {
     }
     setGenerating(true);
     setGenError(null);
-
     try {
-      // 全ペアの移動時間を先に取得（Greedy最適化用）
-      const timeMap: Record<string, number> = {};
-      for (let i = 0; i < selectedForRoute.length; i++) {
-        for (let j = 0; j < selectedForRoute.length; j++) {
-          if (i === j) continue;
-          const leg = await fetchLeg(
-            selectedForRoute[i],
-            selectedForRoute[j],
-            transportMode,
-          );
-          timeMap[`${selectedForRoute[i].id}_${selectedForRoute[j].id}`] =
-            leg.minutes;
+      if (transportMode === "transit") {
+        // 公共交通機関の場合：順序決定→連鎖的に最速候補を計算
+        let ordered = selectedForRoute;
+
+        if (orderMode === "auto") {
+          // 順序決定用に徒歩の概算移動時間を使う（Transit APIを毎ペア叩くのは重いため簡易的に徒歩距離で近似）
+          const timeMap: Record<string, number> = {};
+          for (let i = 0; i < selectedForRoute.length; i++) {
+            for (let j = 0; j < selectedForRoute.length; j++) {
+              if (i === j) continue;
+              const leg = await fetchLeg(
+                selectedForRoute[i],
+                selectedForRoute[j],
+                "walk",
+              );
+              timeMap[`${selectedForRoute[i].id}_${selectedForRoute[j].id}`] =
+                leg.minutes;
+            }
+          }
+          ordered = optimizeOrder(selectedForRoute, timeMap);
         }
-      }
 
-      const ordered =
-        orderMode === "auto"
-          ? optimizeOrder(selectedForRoute, timeMap)
-          : selectedForRoute;
+        const transitLegsResult = await calculateTransitChain(
+          ordered,
+          departureDateTime,
+        );
 
-      // 確定した順序でジオメトリ付きのlegsを取得
-      const legs: LegResult[] = [];
-      for (let i = 0; i < ordered.length - 1; i++) {
-        const leg = await fetchLeg(ordered[i], ordered[i + 1], transportMode);
-        legs.push(leg);
-      }
+        if (transitLegsResult.length === 0) {
+          setGenError("公共交通機関のルートが見つかりませんでした");
+          setGenerating(false);
+          return;
+        }
 
-      const totalTravelMin = legs.reduce((sum, leg) => sum + leg.minutes, 0);
-      const totalStayMin = ordered.reduce(
-        (sum, s) => sum + getDurationForSpot(s),
-        0,
-      );
-      const totalMin = totalTravelMin + totalStayMin;
+        const totalTravelMin = transitLegsResult.reduce(
+          (sum, l) => sum + (l ? l.durationSecs / 60 : 0),
+          0,
+        );
+        const totalStayMin = ordered.reduce(
+          (sum, s) => sum + getDurationForSpot(s),
+          0,
+        );
+        const totalMin = Math.round(totalTravelMin + totalStayMin);
 
-      setRouteResult({ orderedSpots: ordered, legs, totalMin });
+        setTransitLegs(transitLegsResult);
+        setRouteResult({ orderedSpots: ordered, legs: [], totalMin });
 
-      // DB保存（ログイン時のみ）
-      if (user) {
-        const { data: routeData, error: routeError } = await supabase
-          .from("routes")
-          .insert({
-            user_id: user.id,
-            transport_mode: transportMode,
-            total_minutes: totalMin,
-          })
-          .select()
-          .single();
+        if (user) {
+          const { data: routeData, error: routeError } = await supabase
+            .from("routes")
+            .insert({
+              user_id: user.id,
+              transport_mode: "transit",
+              total_minutes: totalMin,
+            })
+            .select()
+            .single();
+          if (!routeError && routeData) {
+            const routeSpots = ordered.map((spot, i) => ({
+              route_id: routeData.id,
+              spot_id: spot.id,
+              order_index: i,
+              travel_min_from_prev:
+                i === 0
+                  ? null
+                  : transitLegsResult[i - 1]
+                    ? Math.round(transitLegsResult[i - 1]!.durationSecs / 60)
+                    : null,
+            }));
+            await supabase.from("route_spots").insert(routeSpots);
+          }
+        }
+      } else {
+        // 自動車・徒歩の場合：既存のロジック
+        const timeMap: Record<string, number> = {};
+        for (let i = 0; i < selectedForRoute.length; i++) {
+          for (let j = 0; j < selectedForRoute.length; j++) {
+            if (i === j) continue;
+            const leg = await fetchLeg(
+              selectedForRoute[i],
+              selectedForRoute[j],
+              transportMode,
+            );
+            timeMap[`${selectedForRoute[i].id}_${selectedForRoute[j].id}`] =
+              leg.minutes;
+          }
+        }
+        const ordered =
+          orderMode === "auto"
+            ? optimizeOrder(selectedForRoute, timeMap)
+            : selectedForRoute;
 
-        if (!routeError && routeData) {
-          const routeSpots = ordered.map((spot, i) => ({
-            route_id: routeData.id,
-            spot_id: spot.id,
-            order_index: i,
-            travel_min_from_prev: i === 0 ? null : legs[i - 1].minutes,
-          }));
-          await supabase.from("route_spots").insert(routeSpots);
+        const legs: LegResult[] = [];
+        for (let i = 0; i < ordered.length - 1; i++) {
+          const leg = await fetchLeg(ordered[i], ordered[i + 1], transportMode);
+          legs.push(leg);
+        }
+
+        const totalTravelMin = legs.reduce((sum, leg) => sum + leg.minutes, 0);
+        const totalStayMin = ordered.reduce(
+          (sum, s) => sum + getDurationForSpot(s),
+          0,
+        );
+        const totalMin = totalTravelMin + totalStayMin;
+
+        setRouteResult({ orderedSpots: ordered, legs, totalMin });
+        setTransitLegs([]);
+
+        if (user) {
+          const { data: routeData, error: routeError } = await supabase
+            .from("routes")
+            .insert({
+              user_id: user.id,
+              transport_mode: transportMode,
+              total_minutes: totalMin,
+            })
+            .select()
+            .single();
+          if (!routeError && routeData) {
+            const routeSpots = ordered.map((spot, i) => ({
+              route_id: routeData.id,
+              spot_id: spot.id,
+              order_index: i,
+              travel_min_from_prev: i === 0 ? null : legs[i - 1].minutes,
+            }));
+            await supabase.from("route_spots").insert(routeSpots);
+          }
         }
       }
     } catch (err) {
@@ -985,16 +1182,120 @@ export default function MapPage() {
                   style={{ fontSize: "12px", marginBottom: "4px" }}
                 >
                   {i > 0 && (
-                    <div
-                      style={{
-                        color: "#999",
-                        paddingLeft: "20px",
-                        fontSize: "11px",
-                      }}
-                    >
-                      {t(`route.${transportMode}`)} {t("result.travelTime")}
-                      {routeResult.legs[i - 1].minutes}
-                      {t("route.minutes")}
+                    <div style={{ paddingLeft: "20px", marginBottom: "4px" }}>
+                      {transportMode === "transit" ? (
+                        transitLegs[i - 1] ? (
+                          <div
+                            style={{
+                              background: "#F5F5F5",
+                              borderRadius: "6px",
+                              padding: "6px 8px",
+                              fontSize: "11px",
+                              color: "#555",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                marginBottom: "2px",
+                              }}
+                            >
+                              <span>
+                                🚃{" "}
+                                {secsToTimeStr(
+                                  transitLegs[i - 1]!.departureSecs,
+                                )}{" "}
+                                発 →{" "}
+                                {secsToTimeStr(transitLegs[i - 1]!.arrivalSecs)}{" "}
+                                着
+                                {transitLegs[i - 1]!.transferCount > 0 &&
+                                  ` （乗換${transitLegs[i - 1]!.transferCount}回）`}
+                              </span>
+                              <button
+                                onClick={() => handleEditLeg(i - 1)}
+                                style={{
+                                  fontSize: "10px",
+                                  padding: "2px 6px",
+                                  border: "1px solid #2196F3",
+                                  background: "white",
+                                  color: "#2196F3",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                🔄 変更
+                              </button>
+                            </div>
+                            {transitLegs[i - 1]!.accessWalkSecs ? (
+                              <div style={{ color: "#888", fontSize: "10px" }}>
+                                🚶 最寄り駅まで徒歩
+                                {Math.round(
+                                  transitLegs[i - 1]!.accessWalkSecs! / 60,
+                                )}
+                                分
+                              </div>
+                            ) : null}
+                            {transitLegs[i - 1]!.legs.filter(
+                              (l) => l.kind === "transit",
+                            ).map((leg, li) => (
+                              <div
+                                key={li}
+                                style={{ color: "#888", fontSize: "10px" }}
+                              >
+                                {leg.routeName ?? leg.mode} {leg.from.name}→
+                                {leg.to.name}
+                              </div>
+                            ))}
+                            {transitLegs[i - 1]!.egressWalkSecs ? (
+                              <div style={{ color: "#888", fontSize: "10px" }}>
+                                🚶 駅から目的地まで徒歩
+                                {Math.round(
+                                  transitLegs[i - 1]!.egressWalkSecs! / 60,
+                                )}
+                                分
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              background: "#FFF3E0",
+                              borderRadius: "6px",
+                              padding: "6px 8px",
+                              fontSize: "11px",
+                              color: "#E65100",
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <span>
+                              ⚠️ この区間の公共交通ルートが見つかりませんでした
+                            </span>
+                            <button
+                              onClick={() => handleEditLeg(i - 1)}
+                              style={{
+                                fontSize: "10px",
+                                padding: "2px 6px",
+                                border: "1px solid #E65100",
+                                background: "white",
+                                color: "#E65100",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              🔄 再検索
+                            </button>
+                          </div>
+                        )
+                      ) : (
+                        <div style={{ color: "#999", fontSize: "11px" }}>
+                          {t(`route.${transportMode}`)} {t("result.travelTime")}
+                          {routeResult.legs[i - 1]?.minutes}
+                          {t("route.minutes")}
+                        </div>
+                      )}
                     </div>
                   )}
                   <div
@@ -1136,6 +1437,123 @@ export default function MapPage() {
           </Popup>
         )}
       </Map>
+      {/* 候補選択モーダル */}
+      {editingLegIndex !== null && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "16px",
+              maxWidth: "360px",
+              width: "90%",
+              maxHeight: "70vh",
+              overflowY: "auto",
+            }}
+          >
+            <p
+              style={{
+                margin: "0 0 12px",
+                fontWeight: "bold",
+                fontSize: "14px",
+              }}
+            >
+              候補を選択
+            </p>
+            {legCandidates.length === 0 && (
+              <p style={{ fontSize: "13px", color: "#999" }}>
+                候補が見つかりません
+              </p>
+            )}
+            {legCandidates.map((option, i) => (
+              <button
+                key={i}
+                onClick={() => handleSelectCandidate(option)}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "10px",
+                  marginBottom: "8px",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  background: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontSize: "13px", fontWeight: "bold" }}>
+                  {secsToTimeStr(option.departureSecs)} 発 →{" "}
+                  {secsToTimeStr(option.arrivalSecs)} 着
+                </div>
+                <div
+                  style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}
+                >
+                  所要 {Math.round(option.durationSecs / 60)}分
+                  {option.transferCount > 0 &&
+                    ` ・乗換${option.transferCount}回`}
+                </div>
+                {option.accessWalkSecs ? (
+                  <div style={{ fontSize: "10px", color: "#999" }}>
+                    🚶 最寄り駅まで徒歩{Math.round(option.accessWalkSecs / 60)}
+                    分
+                  </div>
+                ) : null}
+                {option.legs
+                  .filter((l) => l.kind === "transit")
+                  .map((leg, li) => (
+                    <div key={li} style={{ fontSize: "10px", color: "#999" }}>
+                      {leg.routeName ?? leg.mode} {leg.from.name}→{leg.to.name}
+                    </div>
+                  ))}
+                {option.egressWalkSecs ? (
+                  <div style={{ fontSize: "10px", color: "#999" }}>
+                    🚶 駅から目的地まで徒歩
+                    {Math.round(option.egressWalkSecs / 60)}分
+                  </div>
+                ) : null}
+                {option.legs
+                  .filter((l) => l.kind === "transit")
+                  .map((leg, li) => (
+                    <div key={li} style={{ fontSize: "10px", color: "#999" }}>
+                      {leg.routeName ?? leg.mode} {leg.from.name}→{leg.to.name}
+                    </div>
+                  ))}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                setEditingLegIndex(null);
+                setLegCandidates([]);
+              }}
+              style={{
+                width: "100%",
+                padding: "8px",
+                marginTop: "4px",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                background: "white",
+                cursor: "pointer",
+                fontSize: "13px",
+              }}
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
