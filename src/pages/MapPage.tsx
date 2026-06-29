@@ -32,13 +32,30 @@ interface SpotCharacter {
   spot_id: string;
   character_id: string;
 }
-type TransportMode = "car" | "walk";
+type TransportMode = "car" | "walk" | "transit";
 
 interface LegResult {
   fromId: string;
   toId: string;
   minutes: number;
   geometry: GeoJSON.LineString;
+}
+
+interface TransitOption {
+  departureSecs: number;
+  arrivalSecs: number;
+  durationSecs: number;
+  transferCount: number;
+  legs: {
+    kind: "transit" | "walk";
+    routeName?: string;
+    mode?: string;
+    headsign?: string;
+    from: { name: string };
+    to: { name: string };
+    departureSecs: number;
+    arrivalSecs: number;
+  }[];
 }
 
 export default function MapPage() {
@@ -85,6 +102,11 @@ export default function MapPage() {
   const [userDurations, setUserDurations] = useState<Record<string, number>>(
     {},
   );
+  const [departureDateTime, setDepartureDateTime] = useState<string>(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 10); // 10分後をデフォルトに
+    return now.toISOString().slice(0, 16);
+  });
 
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
@@ -405,6 +427,41 @@ export default function MapPage() {
     );
 
     return leg;
+  };
+
+  // 秒数（その日0時からの経過秒）を HH:MM 形式に変換
+  const secsToTimeStr = (secs: number): string => {
+    const normalizedSecs = ((secs % 86400) + 86400) % 86400; // 負値・86400超対応
+    const h = Math.floor(normalizedSecs / 3600);
+    const m = Math.floor((normalizedSecs % 3600) / 60);
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
+
+  // 日時文字列（YYYY-MM-DDTHH:MM）から date(YYYYMMDD)とtime(HH:MM)を抽出
+  const parseDateTimeInput = (
+    datetimeStr: string,
+  ): { date: string; time: string } => {
+    const [datePart, timePart] = datetimeStr.split("T");
+    const date = datePart.replace(/-/g, "");
+    return { date, time: timePart };
+  };
+
+  // Transit APIで公共交通機関の経路を検索（複数候補）
+  const fetchTransitOptions = async (
+    from: Spot,
+    to: Spot,
+    date: string,
+    time: string,
+  ): Promise<TransitOption[]> => {
+    const url = `https://api.transit.ls8h.com/api/v1/plan?from=geo:${from.lat},${from.lng}&to=geo:${to.lat},${to.lng}&date=${date}&time=${time}&type=departure&numItineraries=3`;
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.journeys ?? [];
+    } catch (err) {
+      console.error("Transit API エラー:", err);
+      return [];
+    }
   };
 
   // Greedy法でルートを最適化
@@ -758,27 +815,49 @@ export default function MapPage() {
                   <div
                     style={{ display: "flex", gap: "6px", marginBottom: "8px" }}
                   >
-                    {(["car", "walk"] as TransportMode[]).map((mode) => (
-                      <button
-                        key={mode}
-                        onClick={() => setTransportMode(mode)}
+                    {(["car", "walk", "transit"] as TransportMode[]).map(
+                      (mode) => (
+                        <button
+                          key={mode}
+                          onClick={() => setTransportMode(mode)}
+                          style={{
+                            flex: 1,
+                            padding: "6px",
+                            fontSize: "12px",
+                            borderRadius: "6px",
+                            border: "1px solid",
+                            borderColor:
+                              transportMode === mode ? "#2196F3" : "#ddd",
+                            background:
+                              transportMode === mode ? "#E3F2FD" : "white",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {t(`route.${mode}`)}
+                        </button>
+                      ),
+                    )}
+                  </div>
+
+                  {transportMode === "transit" && (
+                    <div style={{ marginBottom: "8px" }}>
+                      <p style={{ margin: "0 0 4px", fontSize: "12px" }}>
+                        出発日時
+                      </p>
+                      <input
+                        type="datetime-local"
+                        value={departureDateTime}
+                        onChange={(e) => setDepartureDateTime(e.target.value)}
                         style={{
-                          flex: 1,
+                          width: "100%",
                           padding: "6px",
                           fontSize: "12px",
                           borderRadius: "6px",
-                          border: "1px solid",
-                          borderColor:
-                            transportMode === mode ? "#2196F3" : "#ddd",
-                          background:
-                            transportMode === mode ? "#E3F2FD" : "white",
-                          cursor: "pointer",
+                          border: "1px solid #ddd",
                         }}
-                      >
-                        {t(`route.${mode}`)}
-                      </button>
-                    ))}
-                  </div>
+                      />
+                    </div>
+                  )}
 
                   {transportMode === "car" && (
                     <label
