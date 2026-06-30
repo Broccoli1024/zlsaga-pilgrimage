@@ -112,6 +112,9 @@ export default function MapPage() {
   const [transitLegs, setTransitLegs] = useState<(TransitOption | null)[]>([]);
   const [editingLegIndex, setEditingLegIndex] = useState<number | null>(null);
   const [legCandidates, setLegCandidates] = useState<TransitOption[]>([]);
+  const [currentRouteId, setCurrentRouteId] = useState<string | null>(null);
+  const [routeNameInput, setRouteNameInput] = useState<string>("");
+  const [savingRoute, setSavingRoute] = useState(false);
 
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
@@ -513,6 +516,43 @@ export default function MapPage() {
     return legs;
   };
 
+  // 未保存ルートが多くなりすぎないよう、直近5件を超えたら古いものを削除
+  const cleanupUnsavedRoutes = async () => {
+    if (!user) return;
+    const { data: unsavedRoutes } = await supabase
+      .from("routes")
+      .select("id, created_at")
+      .eq("user_id", user.id)
+      .eq("is_saved", false)
+      .order("created_at", { ascending: false });
+
+    if (unsavedRoutes && unsavedRoutes.length >= 5) {
+      const toDelete = unsavedRoutes.slice(4); // 直近4件を残し、5件目以降を削除（このあと1件追加されるため）
+      const idsToDelete = toDelete.map((r) => r.id);
+      if (idsToDelete.length > 0) {
+        await supabase.from("routes").delete().in("id", idsToDelete);
+      }
+    }
+  };
+
+  const handleSaveRoute = async () => {
+    if (!currentRouteId || !routeNameInput.trim()) return;
+    setSavingRoute(true);
+    const { error } = await supabase
+      .from("routes")
+      .update({ name: routeNameInput.trim(), is_saved: true })
+      .eq("id", currentRouteId);
+    if (!error) {
+      alert("ルートを保存しました！");
+    }
+    setSavingRoute(false);
+  };
+
+  // スポット名から「A→B→C」形式のデフォルトルート名を生成
+  const generateDefaultRouteName = (spots: Spot[]): string => {
+    return spots.map((s) => s.name).join("→");
+  };
+
   // 指定した区間の候補を3つ取得し、選択UIを表示する
   const handleEditLeg = async (legIndex: number) => {
     if (!routeResult) return;
@@ -670,18 +710,22 @@ export default function MapPage() {
 
         setTransitLegs(transitLegsResult);
         setRouteResult({ orderedSpots: ordered, legs: [], totalMin });
+        setRouteNameInput(generateDefaultRouteName(ordered));
 
         if (user) {
+          await cleanupUnsavedRoutes();
           const { data: routeData, error: routeError } = await supabase
             .from("routes")
             .insert({
               user_id: user.id,
               transport_mode: "transit",
               total_minutes: totalMin,
+              is_saved: false,
             })
             .select()
             .single();
           if (!routeError && routeData) {
+            setCurrentRouteId(routeData.id);
             const routeSpots = ordered.map((spot, i) => ({
               route_id: routeData.id,
               spot_id: spot.id,
@@ -731,18 +775,22 @@ export default function MapPage() {
 
         setRouteResult({ orderedSpots: ordered, legs, totalMin });
         setTransitLegs([]);
+        setRouteNameInput(generateDefaultRouteName(ordered));
 
         if (user) {
+          await cleanupUnsavedRoutes();
           const { data: routeData, error: routeError } = await supabase
             .from("routes")
             .insert({
               user_id: user.id,
               transport_mode: transportMode,
               total_minutes: totalMin,
+              is_saved: false,
             })
             .select()
             .single();
           if (!routeError && routeData) {
+            setCurrentRouteId(routeData.id);
             const routeSpots = ordered.map((spot, i) => ({
               route_id: routeData.id,
               spot_id: spot.id,
@@ -1328,6 +1376,61 @@ export default function MapPage() {
                   </div>
                 </div>
               ))}
+
+              {/* ルート保存 */}
+              {currentRouteId && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "10px",
+                    background: "#F5F5F5",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: "0 0 6px",
+                      fontSize: "12px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    このルートを保存
+                  </p>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <input
+                      type="text"
+                      value={routeNameInput}
+                      onChange={(e) => setRouteNameInput(e.target.value)}
+                      placeholder="ルート名を入力（例：唐津・伊万里日帰り旅）"
+                      style={{
+                        flex: 1,
+                        padding: "6px",
+                        fontSize: "12px",
+                        borderRadius: "6px",
+                        border: "1px solid #ddd",
+                      }}
+                    />
+                    <button
+                      onClick={handleSaveRoute}
+                      disabled={savingRoute || !routeNameInput.trim()}
+                      style={{
+                        padding: "6px 12px",
+                        background: routeNameInput.trim() ? "#4CAF50" : "#ccc",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        cursor: routeNameInput.trim()
+                          ? "pointer"
+                          : "not-allowed",
+                        fontSize: "12px",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {savingRoute ? "保存中..." : "💾 保存"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={() => setRouteResult(null)}
