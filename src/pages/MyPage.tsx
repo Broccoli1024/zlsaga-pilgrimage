@@ -105,6 +105,7 @@ export default function MyPage() {
       const { data: routeData } = await supabase
         .from("routes")
         .select("*")
+        .eq("is_saved", true)
         .order("created_at", { ascending: false });
       if (routeData) setRoutes(routeData);
 
@@ -429,9 +430,19 @@ export default function MyPage() {
               }}
             >
               <p style={{ margin: "0 0 4px", fontWeight: "bold" }}>
+                {route.name ||
+                  (route.transport_mode === "car"
+                    ? t("mypage.carRoute")
+                    : route.transport_mode === "transit"
+                      ? t("route.transit")
+                      : t("mypage.transitRoute"))}
+              </p>
+              <p style={{ margin: "0 0 2px", color: "#999", fontSize: "11px" }}>
                 {route.transport_mode === "car"
-                  ? t("mypage.carRoute")
-                  : t("mypage.transitRoute")}
+                  ? t("route.car")
+                  : route.transport_mode === "transit"
+                    ? t("route.transit")
+                    : t("route.walk")}
               </p>
               <p style={{ margin: 0, color: "#999", fontSize: "12px" }}>
                 {t("mypage.total")}
