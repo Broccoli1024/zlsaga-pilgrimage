@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
@@ -10,6 +9,7 @@ import SpotListPanel from "../components/spot/SpotListPanel";
 import SpotDetailPopup from "../components/spot/SpotDetailPopup";
 import type { SpotFilters } from "../components/spot/SpotListPanel";
 import type { Spot, SignificanceTag } from "../types";
+import { Link, useSearchParams } from "react-router-dom";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -115,13 +115,14 @@ export default function MapPage() {
   const [currentRouteId, setCurrentRouteId] = useState<string | null>(null);
   const [routeNameInput, setRouteNameInput] = useState<string>("");
   const [savingRoute, setSavingRoute] = useState(false);
-
   // 生成済みルート
   const [routeResult, setRouteResult] = useState<{
     orderedSpots: Spot[];
     legs: LegResult[];
     totalMin: number;
   } | null>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -195,6 +196,47 @@ export default function MapPage() {
     };
     fetchUserDurations();
   }, [user]);
+
+  useEffect(() => {
+    const restoreRouteId = searchParams.get("restoreRoute");
+    if (!restoreRouteId || spots.length === 0) return;
+
+    const restoreRoute = async () => {
+      const { data: routeData } = await supabase
+        .from("routes")
+        .select("*")
+        .eq("id", restoreRouteId)
+        .single();
+
+      if (!routeData) return;
+
+      const { data: routeSpotsData } = await supabase
+        .from("route_spots")
+        .select("spot_id, order_index")
+        .eq("route_id", restoreRouteId)
+        .order("order_index", { ascending: true });
+
+      if (!routeSpotsData) return;
+
+      const restoredSpots = routeSpotsData
+        .map((rs) => spots.find((s) => s.id === rs.spot_id))
+        .filter((s): s is Spot => !!s);
+
+      if (restoredSpots.length === 0) return;
+
+      setSelectedForRoute(restoredSpots);
+      setTransportMode(routeData.transport_mode as TransportMode);
+      setOrderMode("manual"); // 復元時は常に手動扱い
+      setRouteMode(true);
+      setRouteResult(null);
+
+      // URLパラメータをクリア（再読み込み時の誤動作防止）
+      searchParams.delete("restoreRoute");
+      setSearchParams(searchParams, { replace: true });
+    };
+
+    restoreRoute();
+  }, [searchParams, spots]);
 
   const handleCheckin = async (spot: Spot) => {
     if (!user) return;

@@ -205,8 +205,7 @@ export default function RouteResultPage() {
       <div style={{ marginTop: "1.5rem", display: "flex", gap: "8px" }}>
         <button
           onClick={() => {
-            const spotIds = spots.map((s) => s.id).join(",");
-            navigate(`/routes/new?spots=${spotIds}`);
+            navigate(`/?restoreRoute=${id}`);
           }}
           style={{
             flex: 1,
