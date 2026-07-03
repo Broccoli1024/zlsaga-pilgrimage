@@ -1,0 +1,51 @@
+:root {
+  /* カラー */
+  --color-primary: #8b2500;
+  --color-primary-hover: #a83020;
+  --color-primary-light: #f2e8dc;
+  --color-primary-pale: #fdfaf5;
+
+  /* テキスト */
+  --color-text-main: #1e1a16;
+  --color-text-sub: #6b5e50;
+  --color-text-muted: #9a8f82;
+
+  /* ボーダー・背景 */
+  --color-border: #d4c8b8;
+  --color-border-light: #ede5d8;
+  --color-bg: #f2e8dc;
+  --color-card: #fdfaf5;
+  --color-white: #ffffff;
+
+  /* アクセント（機能色） */
+  --color-success: #2e6b3e;
+  --color-success-light: #e8f5ec;
+  --color-warning: #8b6000;
+  --color-warning-light: #fff8e1;
+  --color-error: #8b2500;
+  --color-error-light: #fdecea;
+
+  /* シャドウ */
+  --shadow-sm: 0 1px 4px rgba(30, 26, 22, 0.08);
+  --shadow-md: 0 2px 8px rgba(30, 26, 22, 0.12);
+  --shadow-lg: 0 4px 16px rgba(30, 26, 22, 0.16);
+
+  /* ボーダーラジウス */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* スペーシング */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+
+  /* フォント */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+}

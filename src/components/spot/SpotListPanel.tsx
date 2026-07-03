@@ -3,15 +3,6 @@ import { useTranslation } from "react-i18next";
 import type { Spot } from "../../types";
 
 export type SacredFilter = "all" | "sacred" | "non_sacred";
-
-export interface SpotFilters {
-  sacredFilter: SacredFilter;
-  areaFilter: string;
-  categoryFilter: string;
-  characterFilter: string;
-  tagFilter: string;
-}
-
 export type CheckinFilter = "all" | "visited" | "not_visited";
 
 export interface SpotFilters {
@@ -28,7 +19,7 @@ export interface SpotFilters {
 interface Props {
   spots: Spot[];
   filteredSpots: Spot[];
-  checkedInSpotsMap: Record<string, boolean>; // key: spot_id, value: is_favorite
+  checkedInSpotsMap: Record<string, boolean>;
   areas: { id: string; name: string; name_en: string | null }[];
   categories: { id: string; name: string; name_en: string | null }[];
   characters: { id: string; name: string; name_en: string | null }[];
@@ -39,6 +30,8 @@ interface Props {
   onOpenChange: (isOpen: boolean) => void;
   isSpotSacred: (spot: Spot) => boolean;
 }
+
+const PANEL_WIDTH = 300;
 
 export default function SpotListPanel({
   filteredSpots,
@@ -55,7 +48,6 @@ export default function SpotListPanel({
 }: Props) {
   const { i18n } = useTranslation();
   const isEn = i18n.language.startsWith("en");
-
   const [isOpen, setIsOpen] = useState(false);
 
   const getAreaName = (areaId: string | null) => {
@@ -70,8 +62,45 @@ export default function SpotListPanel({
     return isEn ? (cat?.name_en ?? cat?.name ?? "") : (cat?.name ?? "");
   };
 
+  const hasActiveFilter =
+    filters.sacredFilter !== "all" ||
+    filters.areaFilter !== "all" ||
+    filters.categoryFilter !== "all" ||
+    filters.characterFilter !== "all" ||
+    filters.tagFilter !== "all" ||
+    filters.checkinFilter !== "all" ||
+    filters.favoriteOnly ||
+    filters.searchQuery !== "";
+
+  const selectStyle = {
+    width: "100%",
+    padding: "7px 10px",
+    marginBottom: "6px",
+    borderRadius: "var(--radius-sm)",
+    border: "0.5px solid var(--color-border)",
+    background: "var(--color-card)",
+    color: "var(--color-text-main)",
+    fontSize: "var(--font-size-sm)",
+    outline: "none",
+  };
+
+  const toggleBtnStyle = (active: boolean) => ({
+    flex: 1,
+    padding: "5px 0",
+    fontSize: "var(--font-size-xs)",
+    borderRadius: "var(--radius-sm)",
+    border: active
+      ? "0.5px solid var(--color-primary)"
+      : "0.5px solid var(--color-border)",
+    background: active ? "var(--color-primary-light)" : "var(--color-card)",
+    color: active ? "var(--color-primary)" : "var(--color-text-sub)",
+    cursor: "pointer",
+    fontWeight: active ? "500" : "normal",
+  });
+
   return (
     <>
+      {/* 開閉ボタン */}
       <button
         onClick={() => {
           const next = !isOpen;
@@ -81,48 +110,84 @@ export default function SpotListPanel({
         style={{
           position: "absolute",
           top: 16,
-          left: isOpen ? 270 : 10,
-          zIndex: 2,
+          left: isOpen ? PANEL_WIDTH + 8 : 10,
+          zIndex: 3,
           padding: "8px 14px",
-          borderRadius: "8px",
+          borderRadius: "var(--radius-sm)",
           border: "none",
-          background: "#fff",
+          background: "var(--color-card)",
+          color: "var(--color-text-main)",
           cursor: "pointer",
-          fontWeight: "bold",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-          fontSize: "13px",
+          fontWeight: "500",
+          boxShadow: "var(--shadow-md)",
+          fontSize: "var(--font-size-sm)",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          transition: "left 0.2s",
         }}
       >
-        {isOpen ? "✕" : "📋 一覧"}
+        {isOpen ? "✕ 閉じる" : "📋 一覧"}
+        {hasActiveFilter && !isOpen && (
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "var(--color-primary)",
+              display: "inline-block",
+            }}
+          />
+        )}
       </button>
 
+      {/* サイドパネル */}
       {isOpen && (
         <div
           style={{
             position: "absolute",
             top: 0,
             left: 0,
-            zIndex: 1,
-            width: "300px",
+            zIndex: 2,
+            width: `${PANEL_WIDTH}px`,
             height: "100vh",
-            background: "white",
-            boxShadow: "2px 0 8px rgba(0,0,0,0.2)",
+            background: "var(--color-bg)",
+            boxShadow: "var(--shadow-lg)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
           }}
         >
-          <div style={{ padding: "16px", borderBottom: "1px solid #eee" }}>
+          {/* パネルヘッダー */}
+          <div
+            style={{
+              padding: "var(--space-lg)",
+              borderBottom: "2px solid var(--color-primary)",
+              background: "var(--color-card)",
+            }}
+          >
             <p
               style={{
-                margin: "0 0 12px",
-                fontWeight: "bold",
-                fontSize: "15px",
+                margin: "0 0 var(--space-md)",
+                fontWeight: "500",
+                fontSize: "var(--font-size-md)",
+                color: "var(--color-text-main)",
               }}
             >
-              スポット一覧（{filteredSpots.length}件）
+              スポット一覧
+              <span
+                style={{
+                  fontSize: "var(--font-size-xs)",
+                  color: "var(--color-text-muted)",
+                  marginLeft: "8px",
+                  fontWeight: "normal",
+                }}
+              >
+                {filteredSpots.length}件
+              </span>
             </p>
 
+            {/* 検索 */}
             <input
               type="text"
               value={filters.searchQuery}
@@ -131,16 +196,19 @@ export default function SpotListPanel({
               }
               placeholder="🔍 スポットを検索"
               style={{
-                width: "100%",
-                padding: "6px 8px",
-                marginBottom: "8px",
-                borderRadius: "6px",
-                border: "1px solid #ddd",
-                fontSize: "13px",
+                ...selectStyle,
+                marginBottom: "var(--space-sm)",
               }}
             />
 
-            <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+            {/* 聖地フィルタ */}
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+                marginBottom: "var(--space-sm)",
+              }}
+            >
               {(
                 [
                   ["all", "すべて"],
@@ -153,37 +221,20 @@ export default function SpotListPanel({
                   onClick={() =>
                     onFiltersChange({ ...filters, sacredFilter: value })
                   }
-                  style={{
-                    flex: 1,
-                    padding: "4px 0",
-                    fontSize: "11px",
-                    borderRadius: "6px",
-                    border: "1px solid",
-                    borderColor:
-                      filters.sacredFilter === value ? "#2196F3" : "#ddd",
-                    background:
-                      filters.sacredFilter === value ? "#E3F2FD" : "white",
-                    cursor: "pointer",
-                  }}
+                  style={toggleBtnStyle(filters.sacredFilter === value)}
                 >
                   {label}
                 </button>
               ))}
             </div>
 
+            {/* エリア・カテゴリ・キャラクター・登場度 */}
             <select
               value={filters.areaFilter}
               onChange={(e) =>
                 onFiltersChange({ ...filters, areaFilter: e.target.value })
               }
-              style={{
-                width: "100%",
-                padding: "6px",
-                marginBottom: "6px",
-                borderRadius: "6px",
-                border: "1px solid #ddd",
-                fontSize: "13px",
-              }}
+              style={selectStyle}
             >
               <option value="all">エリア：すべて</option>
               {areas.map((area) => (
@@ -198,14 +249,7 @@ export default function SpotListPanel({
               onChange={(e) =>
                 onFiltersChange({ ...filters, categoryFilter: e.target.value })
               }
-              style={{
-                width: "100%",
-                padding: "6px",
-                marginBottom: "6px",
-                borderRadius: "6px",
-                border: "1px solid #ddd",
-                fontSize: "13px",
-              }}
+              style={selectStyle}
             >
               <option value="all">カテゴリ：すべて</option>
               {categories.map((cat) => (
@@ -220,13 +264,7 @@ export default function SpotListPanel({
               onChange={(e) =>
                 onFiltersChange({ ...filters, characterFilter: e.target.value })
               }
-              style={{
-                width: "100%",
-                padding: "6px",
-                borderRadius: "6px",
-                border: "1px solid #ddd",
-                fontSize: "13px",
-              }}
+              style={selectStyle}
             >
               <option value="all">キャラクター：すべて</option>
               {characters.map((char) => (
@@ -241,13 +279,7 @@ export default function SpotListPanel({
               onChange={(e) =>
                 onFiltersChange({ ...filters, tagFilter: e.target.value })
               }
-              style={{
-                width: "100%",
-                padding: "6px",
-                borderRadius: "6px",
-                border: "1px solid #ddd",
-                fontSize: "13px",
-              }}
+              style={{ ...selectStyle, marginBottom: "var(--space-sm)" }}
             >
               <option value="all">登場度：すべて</option>
               {significanceTags
@@ -259,7 +291,14 @@ export default function SpotListPanel({
                 ))}
             </select>
 
-            <div style={{ display: "flex", gap: "4px", margin: "8px 0" }}>
+            {/* チェックイン状態 */}
+            <div
+              style={{
+                display: "flex",
+                gap: "4px",
+                marginBottom: "var(--space-sm)",
+              }}
+            >
               {(
                 [
                   ["all", "すべて"],
@@ -272,32 +311,23 @@ export default function SpotListPanel({
                   onClick={() =>
                     onFiltersChange({ ...filters, checkinFilter: value })
                   }
-                  style={{
-                    flex: 1,
-                    padding: "4px 0",
-                    fontSize: "11px",
-                    borderRadius: "6px",
-                    border: "1px solid",
-                    borderColor:
-                      filters.checkinFilter === value ? "#2196F3" : "#ddd",
-                    background:
-                      filters.checkinFilter === value ? "#E3F2FD" : "white",
-                    cursor: "pointer",
-                  }}
+                  style={toggleBtnStyle(filters.checkinFilter === value)}
                 >
                   {label}
                 </button>
               ))}
             </div>
 
+            {/* お気に入り */}
             <label
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
-                fontSize: "12px",
-                marginBottom: "6px",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-text-sub)",
                 cursor: "pointer",
+                marginBottom: "var(--space-xs)",
               }}
             >
               <input
@@ -313,15 +343,8 @@ export default function SpotListPanel({
               ⭐ お気に入りのみ表示
             </label>
 
-            {/* リセットボタン */}
-            {(filters.sacredFilter !== "all" ||
-              filters.areaFilter !== "all" ||
-              filters.categoryFilter !== "all" ||
-              filters.characterFilter !== "all" ||
-              filters.tagFilter !== "all" ||
-              filters.checkinFilter !== "all" ||
-              filters.favoriteOnly ||
-              filters.searchQuery !== "") && (
+            {/* リセット */}
+            {hasActiveFilter && (
               <button
                 onClick={() =>
                   onFiltersChange({
@@ -337,13 +360,13 @@ export default function SpotListPanel({
                 }
                 style={{
                   width: "100%",
-                  marginTop: "6px",
+                  marginTop: "var(--space-xs)",
                   padding: "6px",
-                  fontSize: "12px",
-                  borderRadius: "6px",
-                  border: "1px solid #f44336",
-                  background: "white",
-                  color: "#f44336",
+                  fontSize: "var(--font-size-xs)",
+                  borderRadius: "var(--radius-sm)",
+                  border: "0.5px solid var(--color-primary)",
+                  background: "var(--color-card)",
+                  color: "var(--color-primary)",
                   cursor: "pointer",
                 }}
               >
@@ -352,7 +375,20 @@ export default function SpotListPanel({
             )}
           </div>
 
+          {/* スポット一覧 */}
           <div style={{ flex: 1, overflowY: "auto" }}>
+            {filteredSpots.length === 0 && (
+              <p
+                style={{
+                  padding: "var(--space-lg)",
+                  color: "var(--color-text-muted)",
+                  fontSize: "var(--font-size-sm)",
+                  textAlign: "center",
+                }}
+              >
+                条件に合うスポットがありません
+              </p>
+            )}
             {filteredSpots.map((spot) => (
               <div
                 key={spot.id}
@@ -362,90 +398,98 @@ export default function SpotListPanel({
                   onOpenChange(false);
                 }}
                 style={{
-                  padding: "12px 16px",
-                  borderBottom: "1px solid #f0f0f0",
+                  padding: "var(--space-md) var(--space-lg)",
+                  borderBottom: "0.5px solid var(--color-border-light)",
                   cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
+                  background: "var(--color-card)",
+                  transition: "background 0.1s",
                 }}
                 onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f5f5f5")
+                  (e.currentTarget.style.background =
+                    "var(--color-primary-light)")
                 }
                 onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "white")
+                  (e.currentTarget.style.background = "var(--color-card)")
                 }
               >
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "8px",
+                  }}
+                >
+                  {/* アクセントライン */}
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      marginBottom: "2px",
+                      width: "2px",
+                      minHeight: "36px",
+                      background: isSpotSacred(spot)
+                        ? "var(--color-primary)"
+                        : "var(--color-border)",
+                      borderRadius: "1px",
+                      flexShrink: 0,
+                      marginTop: "2px",
                     }}
-                  >
-                    <span
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
                       style={{
-                        fontWeight: "bold",
-                        fontSize: "14px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        marginBottom: "2px",
                       }}
                     >
-                      {isEn ? (spot.name_en ?? spot.name) : spot.name}
-                    </span>
-                    {spot.id in checkedInSpotsMap && (
                       <span
                         style={{
-                          fontSize: "12px",
-                          background: checkedInSpotsMap[spot.id]
-                            ? "#FFF8E1"
-                            : "#E8F5E9",
-                          color: checkedInSpotsMap[spot.id]
-                            ? "#F57F17"
-                            : "#2E7D32",
-                          padding: "1px 6px",
-                          borderRadius: "10px",
+                          fontWeight: "500",
+                          fontSize: "var(--font-size-md)",
+                          color: "var(--color-text-main)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {checkedInSpotsMap[spot.id]
-                          ? "⭐ お気に入り"
-                          : "✅ 訪問済"}
+                        {isEn ? (spot.name_en ?? spot.name) : spot.name}
                       </span>
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#999",
-                      display: "flex",
-                      gap: "6px",
-                    }}
-                  >
-                    <span>{getAreaName(spot.area_id)}</span>
-                    {spot.category_id && (
-                      <span>・{getCategoryName(spot.category_id)}</span>
-                    )}
-                    <span>・{isSpotSacred(spot) ? "聖地" : "観光"}</span>
+                      {spot.id in checkedInSpotsMap && (
+                        <span
+                          style={{
+                            fontSize: "var(--font-size-xs)",
+                            background: checkedInSpotsMap[spot.id]
+                              ? "var(--color-warning-light)"
+                              : "var(--color-success-light)",
+                            color: checkedInSpotsMap[spot.id]
+                              ? "var(--color-warning)"
+                              : "var(--color-success)",
+                            padding: "1px 6px",
+                            borderRadius: "var(--radius-sm)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {checkedInSpotsMap[spot.id] ? "⭐" : "✅"}
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--color-text-muted)",
+                        display: "flex",
+                        gap: "4px",
+                      }}
+                    >
+                      <span>{getAreaName(spot.area_id)}</span>
+                      {spot.category_id && (
+                        <span>・{getCategoryName(spot.category_id)}</span>
+                      )}
+                      <span>・{isSpotSacred(spot) ? "聖地" : "観光"}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
-            {filteredSpots.length === 0 && (
-              <p
-                style={{
-                  padding: "16px",
-                  color: "#999",
-                  fontSize: "13px",
-                  textAlign: "center",
-                }}
-              >
-                条件に合うスポットがありません
-              </p>
-            )}
           </div>
         </div>
       )}
