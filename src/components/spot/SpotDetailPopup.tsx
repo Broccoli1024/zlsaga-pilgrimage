@@ -68,7 +68,6 @@ export default function SpotDetailPopup({
 
   useEffect(() => {
     const fetchDetails = async () => {
-      // 登場キャラクター
       const { data: charLinks } = await supabase
         .from("spot_characters")
         .select("character_id")
@@ -86,7 +85,6 @@ export default function SpotDetailPopup({
         setCharacters([]);
       }
 
-      // 登場エピソード
       const { data: epLinks } = await supabase
         .from("spot_episodes")
         .select("episode_id, scene_description, scene_description_en")
@@ -98,7 +96,6 @@ export default function SpotDetailPopup({
           .from("episodes")
           .select("id, media_type, season, episode_number, title, title_en")
           .in("id", epIds);
-
         const merged = (eps ?? []).map((ep) => {
           const link = epLinks.find((l) => l.episode_id === ep.id);
           return {
@@ -122,33 +119,64 @@ export default function SpotDetailPopup({
   const address = isEn ? (spot.address_en ?? spot.address) : spot.address;
 
   return (
-    <div style={{ padding: "4px", minWidth: "260px", maxWidth: "280px" }}>
-      <strong style={{ fontSize: "15px" }}>{name}</strong>
+    <div
+      style={{
+        padding: "var(--space-sm)",
+        minWidth: "260px",
+        maxWidth: "280px",
+        background: "var(--color-card)",
+      }}
+    >
+      {/* スポット名 */}
+      <div
+        style={{
+          borderLeft: "3px solid var(--color-primary)",
+          paddingLeft: "var(--space-sm)",
+          marginBottom: "var(--space-sm)",
+        }}
+      >
+        <strong
+          style={{
+            fontSize: "var(--font-size-md)",
+            color: "var(--color-text-main)",
+          }}
+        >
+          {name}
+        </strong>
+      </div>
 
+      {/* バッジ群 */}
       <div
         style={{
           display: "flex",
-          gap: "6px",
-          margin: "6px 0",
-          fontSize: "11px",
+          gap: "4px",
+          marginBottom: "var(--space-sm)",
           flexWrap: "wrap",
         }}
       >
-        <span
-          style={{
-            background: "#f0f0f0",
-            padding: "2px 8px",
-            borderRadius: "10px",
-          }}
-        >
-          {areaName}
-        </span>
+        {areaName && (
+          <span
+            style={{
+              fontSize: "var(--font-size-xs)",
+              padding: "2px 8px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-bg)",
+              color: "var(--color-text-sub)",
+              border: "0.5px solid var(--color-border)",
+            }}
+          >
+            {areaName}
+          </span>
+        )}
         {categoryName && (
           <span
             style={{
-              background: "#f0f0f0",
+              fontSize: "var(--font-size-xs)",
               padding: "2px 8px",
-              borderRadius: "10px",
+              borderRadius: "var(--radius-sm)",
+              background: "var(--color-bg)",
+              color: "var(--color-text-sub)",
+              border: "0.5px solid var(--color-border)",
             }}
           >
             {categoryName}
@@ -156,10 +184,14 @@ export default function SpotDetailPopup({
         )}
         <span
           style={{
-            background: isSacred ? "#FFEBEE" : "#E3F2FD",
-            color: isSacred ? "#C62828" : "#1565C0",
+            fontSize: "var(--font-size-xs)",
             padding: "2px 8px",
-            borderRadius: "10px",
+            borderRadius: "var(--radius-sm)",
+            background: isSacred
+              ? "var(--color-primary-light)"
+              : "var(--color-bg)",
+            color: isSacred ? "var(--color-primary)" : "var(--color-text-sub)",
+            border: `0.5px solid ${isSacred ? "var(--color-primary)" : "var(--color-border)"}`,
           }}
         >
           {isSacred ? "聖地" : "観光"}
@@ -167,12 +199,12 @@ export default function SpotDetailPopup({
       </div>
 
       {/* 重要度タグ */}
-      {tags.length > 0 && (
+      {tags.filter((t) => t.name !== "聖地").length > 0 && (
         <div
           style={{
             display: "flex",
             gap: "4px",
-            margin: "4px 0",
+            marginBottom: "var(--space-sm)",
             flexWrap: "wrap",
           }}
         >
@@ -183,52 +215,66 @@ export default function SpotDetailPopup({
                 key={tag.id}
                 style={{
                   fontSize: "10px",
-                  background: "#FFF3E0",
-                  color: "#E65100",
+                  background: "var(--color-primary-light)",
+                  color: "var(--color-primary)",
                   padding: "1px 6px",
-                  borderRadius: "8px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "0.5px solid var(--color-primary)",
                 }}
               >
-                {tag.name}
+                {isEn ? (tag.name_en ?? tag.name) : tag.name}
               </span>
             ))}
         </div>
       )}
 
+      {/* 説明 */}
       {description && (
         <p
           style={{
-            margin: "6px 0",
-            fontSize: "12px",
-            color: "#555",
-            lineHeight: 1.5,
+            margin: "0 0 var(--space-sm)",
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-sub)",
+            lineHeight: 1.6,
           }}
         >
           {description}
         </p>
       )}
 
+      {/* 住所・滞在時間 */}
       {address && (
-        <p style={{ margin: "6px 0", fontSize: "11px", color: "#999" }}>
+        <p
+          style={{
+            margin: "0 0 var(--space-xs)",
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-muted)",
+          }}
+        >
           📍 {address}
         </p>
       )}
-
       {spot.duration_min && (
-        <p style={{ margin: "6px 0", fontSize: "11px", color: "#999" }}>
+        <p
+          style={{
+            margin: "0 0 var(--space-sm)",
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-muted)",
+          }}
+        >
           ⏱ 滞在目安：約{spot.duration_min}分
         </p>
       )}
 
       {/* 登場キャラクター */}
       {characters.length > 0 && (
-        <div style={{ margin: "8px 0" }}>
+        <div style={{ marginBottom: "var(--space-sm)" }}>
           <p
             style={{
-              margin: "0 0 4px",
-              fontSize: "11px",
-              fontWeight: "bold",
-              color: "#777",
+              margin: "0 0 var(--space-xs)",
+              fontSize: "var(--font-size-xs)",
+              fontWeight: "500",
+              color: "var(--color-text-sub)",
             }}
           >
             登場キャラクター
@@ -238,11 +284,14 @@ export default function SpotDetailPopup({
               <span
                 key={c.id}
                 style={{
-                  fontSize: "11px",
+                  fontSize: "var(--font-size-xs)",
                   padding: "2px 8px",
-                  borderRadius: "10px",
-                  background: c.color_code ? `${c.color_code}33` : "#eee",
-                  border: `1px solid ${c.color_code ?? "#ccc"}`,
+                  borderRadius: "var(--radius-sm)",
+                  background: c.color_code
+                    ? `${c.color_code}22`
+                    : "var(--color-bg)",
+                  border: `0.5px solid ${c.color_code ?? "var(--color-border)"}`,
+                  color: "var(--color-text-main)",
                 }}
               >
                 {isEn ? (c.name_en ?? c.name) : c.name}
@@ -254,13 +303,13 @@ export default function SpotDetailPopup({
 
       {/* 登場エピソード */}
       {episodes.length > 0 && (
-        <div style={{ margin: "8px 0" }}>
+        <div style={{ marginBottom: "var(--space-sm)" }}>
           <p
             style={{
-              margin: "0 0 4px",
-              fontSize: "11px",
-              fontWeight: "bold",
-              color: "#777",
+              margin: "0 0 var(--space-xs)",
+              fontSize: "var(--font-size-xs)",
+              fontWeight: "500",
+              color: "var(--color-text-sub)",
             }}
           >
             登場エピソード
@@ -268,16 +317,27 @@ export default function SpotDetailPopup({
           {episodes.map((ep) => (
             <div
               key={ep.id}
-              style={{ fontSize: "11px", color: "#555", marginBottom: "2px" }}
+              style={{
+                fontSize: "var(--font-size-xs)",
+                color: "var(--color-text-sub)",
+                marginBottom: "2px",
+                paddingLeft: "var(--space-xs)",
+              }}
             >
-              <strong>
+              <strong style={{ color: "var(--color-primary)" }}>
                 {seasonLabel(ep.season, ep.media_type)}
                 {ep.media_type !== "movie" && ` 第${ep.episode_number}話`}
               </strong>{" "}
               {isEn ? (ep.title_en ?? ep.title) : ep.title}
               {(isEn ? ep.scene_description_en : ep.scene_description) && (
-                <div style={{ color: "#999", marginLeft: "4px" }}>
-                  - {isEn ? ep.scene_description_en : ep.scene_description}
+                <div
+                  style={{
+                    color: "var(--color-text-muted)",
+                    fontSize: "10px",
+                    marginTop: "1px",
+                  }}
+                >
+                  {isEn ? ep.scene_description_en : ep.scene_description}
                 </div>
               )}
             </div>
@@ -288,11 +348,11 @@ export default function SpotDetailPopup({
       {/* ミニマップ */}
       <div
         style={{
-          margin: "8px 0",
-          borderRadius: "8px",
+          marginBottom: "var(--space-sm)",
+          borderRadius: "var(--radius-sm)",
           overflow: "hidden",
           height: "100px",
-          border: "1px solid #eee",
+          border: "0.5px solid var(--color-border)",
         }}
       >
         <Map
@@ -315,20 +375,22 @@ export default function SpotDetailPopup({
       {/* チェックインボタン */}
       {canCheckin &&
         (checkedIn ? (
-          <div style={{ display: "flex", gap: "6px", marginTop: "8px" }}>
+          <div style={{ display: "flex", gap: "6px" }}>
             <button
               onClick={onToggleFavorite}
               style={{
                 padding: "6px 10px",
                 cursor: "pointer",
-                background: isFavorite ? "#FFC107" : "#f5f5f5",
-                color: isFavorite ? "white" : "#777",
                 border: "none",
-                borderRadius: "4px",
-                fontSize: "13px",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "var(--font-size-xs)",
+                background: isFavorite ? "#F5C842" : "var(--color-bg)",
+                color: isFavorite
+                  ? "var(--color-white)"
+                  : "var(--color-text-sub)",
               }}
             >
-              {isFavorite ? "⭐ お気に入り" : "☆ お気に入り"}
+              {isFavorite ? "⭐" : "☆"} お気に入り
             </button>
             <button
               onClick={onUnCheckin}
@@ -337,10 +399,11 @@ export default function SpotDetailPopup({
                 flex: 1,
                 padding: "6px 12px",
                 cursor: "pointer",
-                background: "#f44336",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
+                background: "var(--color-error-light)",
+                color: "var(--color-error)",
+                border: "0.5px solid var(--color-error)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "var(--font-size-xs)",
               }}
             >
               {checkingIn ? t("map.processing") : `✅ ${t("map.uncheckin")}`}
@@ -351,19 +414,32 @@ export default function SpotDetailPopup({
             onClick={onCheckin}
             disabled={checkingIn}
             style={{
-              marginTop: "8px",
-              padding: "6px 12px",
               width: "100%",
+              padding: "8px 12px",
               cursor: "pointer",
-              background: "#4CAF50",
-              color: "white",
+              background: "var(--color-primary)",
+              color: "var(--color-white)",
               border: "none",
-              borderRadius: "4px",
+              borderRadius: "var(--radius-sm)",
+              fontSize: "var(--font-size-sm)",
+              fontWeight: "500",
             }}
           >
             {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
           </button>
         ))}
+      {!canCheckin && (
+        <p
+          style={{
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-muted)",
+            textAlign: "center",
+            margin: 0,
+          }}
+        >
+          {t("map.loginRequired")}
+        </p>
+      )}
     </div>
   );
 }
