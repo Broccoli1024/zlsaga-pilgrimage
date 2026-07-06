@@ -65,15 +65,13 @@ export default function MyPage() {
 
   useEffect(() => {
     if (!user) return;
-
     const fetchData = async () => {
       const { data: checkinData } = await supabase
         .from("spot_checkins")
         .select("spot_id, first_visited_at, is_favorite, spots(*)")
         .order("first_visited_at", { ascending: false })
         .returns<CheckinRow[]>();
-
-      if (checkinData) {
+      if (checkinData)
         setCheckins(
           checkinData.map((c) => ({
             spot_id: c.spot_id,
@@ -82,7 +80,6 @@ export default function MyPage() {
             spot: c.spots,
           })),
         );
-      }
 
       const { data: logData } = await supabase
         .from("visit_logs")
@@ -90,8 +87,7 @@ export default function MyPage() {
         .order("visited_at", { ascending: false })
         .limit(50)
         .returns<VisitLogRow[]>();
-
-      if (logData) {
+      if (logData)
         setVisitLogs(
           logData.map((l) => ({
             id: l.id,
@@ -100,7 +96,6 @@ export default function MyPage() {
             spot: l.spots,
           })),
         );
-      }
 
       const { data: routeData } = await supabase
         .from("routes")
@@ -130,37 +125,65 @@ export default function MyPage() {
         .eq("is_published", true);
       if (allSpotsData) setAllSpots(allSpotsData);
     };
-
     fetchData();
   }, [user]);
 
   if (!user) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p>{t("mypage.loginRequired")}</p>
-        <Link to="/login">{t("mypage.toLogin")}</Link>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--color-bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: "var(--color-card)",
+            borderRadius: "var(--radius-lg)",
+            boxShadow: "var(--shadow-md)",
+            padding: "var(--space-xl)",
+            textAlign: "center",
+            borderTop: "2px solid var(--color-primary)",
+          }}
+        >
+          <p
+            style={{
+              color: "var(--color-text-sub)",
+              marginBottom: "var(--space-md)",
+            }}
+          >
+            {t("mypage.loginRequired")}
+          </p>
+          <Link
+            to="/login"
+            style={{
+              color: "var(--color-primary)",
+              textDecoration: "underline",
+            }}
+          >
+            {t("mypage.toLogin")}
+          </Link>
+        </div>
       </div>
     );
   }
 
   const mainTagId = significanceTags.find((t) => t.name === "メイン")?.id;
-
   const isMainSpot = (spotId: string): boolean => {
     if (!mainTagId) return false;
     return spotTags.some(
       (st) => st.spot_id === spotId && st.tag_id === mainTagId,
     );
   };
-
-  // 表示モードに応じた対象スポット
   const targetSpots = showMainOnly
     ? allSpots.filter((s) => isMainSpot(s.id))
     : allSpots;
-
   const visitedTargetCount = checkins.filter(
     (c) => c.spot && targetSpots.some((s) => s.id === c.spot_id),
   ).length;
-
   const areaProgress = areas
     .map((area) => {
       const areaTargetSpots = targetSpots.filter((s) => s.area_id === area.id);
@@ -174,286 +197,456 @@ export default function MyPage() {
     .filter((a) => a.total > 0);
 
   return (
-    <div style={{ maxWidth: "600px", margin: "0 auto", padding: "1.5rem" }}>
-      <Link to="/" style={{ fontSize: "13px", color: "#666" }}>
-        ← {t("route.backToMap")}
-      </Link>
-
-      <h1 style={{ fontSize: "20px", margin: "1rem 0" }}>👤 {user.email}</h1>
-
+    <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
       <div
         style={{
-          background: "#E3F2FD",
-          borderRadius: "8px",
-          padding: "16px",
-          marginBottom: "1rem",
-          textAlign: "center",
+          maxWidth: "600px",
+          margin: "0 auto",
+          padding: "var(--space-xl) var(--space-lg)",
         }}
       >
-        <p style={{ margin: "0 0 4px", fontSize: "13px", color: "#1565C0" }}>
-          {t("mypage.visitedSpots")}
-          {showMainOnly ? "（メインのみ）" : "（全件）"}
-        </p>
-        <p
+        {/* ヘッダー */}
+        <div
           style={{
-            margin: 0,
-            fontSize: "28px",
-            fontWeight: "bold",
-            color: "#1565C0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "var(--space-xl)",
           }}
         >
-          {visitedTargetCount}{" "}
-          <span style={{ fontSize: "16px" }}>/ {targetSpots.length}</span>
-          {targetSpots.length > 0 && (
-            <span
-              style={{ fontSize: "16px", marginLeft: "8px", color: "#1976D2" }}
-            >
-              ({Math.round((visitedTargetCount / targetSpots.length) * 100)}%)
-            </span>
-          )}
-        </p>
-      </div>
-
-      <button
-        onClick={() => setShowMainOnly(!showMainOnly)}
-        style={{
-          width: "100%",
-          padding: "8px",
-          marginBottom: "1.5rem",
-          background: "white",
-          border: "1px solid #2196F3",
-          color: "#2196F3",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "13px",
-        }}
-      >
-        🔄 {showMainOnly ? "全件表示に切替" : "メインのみ表示に切替"}
-      </button>
-
-      <div style={{ display: "flex", gap: "4px", marginBottom: "1rem" }}>
-        {(
-          [
-            ["spots", t("mypage.tabSpots")],
-            ["history", t("mypage.tabHistory")],
-            ["routes", t("mypage.tabRoutes")],
-          ] as [typeof activeTab, string][]
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
+          <Link
+            to="/"
             style={{
-              flex: 1,
-              padding: "8px",
-              borderRadius: "8px",
-              border: "1px solid",
-              borderColor: activeTab === key ? "#2196F3" : "#ddd",
-              background: activeTab === key ? "#E3F2FD" : "white",
-              cursor: "pointer",
-              fontSize: "13px",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              textDecoration: "none",
             }}
           >
-            {label}
-          </button>
-        ))}
-      </div>
+            ← {t("route.backToMap")}
+          </Link>
+        </div>
 
-      {activeTab === "spots" && (
-        <div>
-          {checkins.length > 0 && (
-            <div
+        <div
+          style={{
+            borderLeft: "3px solid var(--color-primary)",
+            paddingLeft: "var(--space-md)",
+            marginBottom: "var(--space-xl)",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 2px",
+              fontSize: "var(--font-size-xs)",
+              color: "var(--color-text-muted)",
+            }}
+          >
+            マイページ
+          </p>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "var(--font-size-lg)",
+              fontWeight: "500",
+              color: "var(--color-text-main)",
+            }}
+          >
+            {user.email}
+          </h1>
+        </div>
+
+        {/* 進捗サマリー */}
+        <div
+          style={{
+            background: "var(--color-card)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "var(--shadow-sm)",
+            borderTop: "2px solid var(--color-primary)",
+            padding: "var(--space-lg)",
+            marginBottom: "var(--space-sm)",
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 var(--space-xs)",
+              fontSize: "var(--font-size-xs)",
+              color: "var(--color-text-muted)",
+            }}
+          >
+            {t("mypage.visitedSpots")}
+            {showMainOnly ? "（メインのみ）" : "（全件）"}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "32px",
+              fontWeight: "500",
+              color: "var(--color-primary)",
+            }}
+          >
+            {visitedTargetCount}
+            <span
               style={{
-                height: "200px",
-                borderRadius: "8px",
-                overflow: "hidden",
-                marginBottom: "1rem",
-                border: "1px solid #eee",
+                fontSize: "var(--font-size-lg)",
+                color: "var(--color-text-sub)",
+                marginLeft: "4px",
               }}
             >
-              <Map
-                mapboxAccessToken={MAPBOX_TOKEN}
-                initialViewState={{
-                  longitude: 130.2988,
-                  latitude: 33.2494,
-                  zoom: 8.5,
-                }}
-                style={{ width: "100%", height: "100%" }}
-                mapStyle="mapbox://styles/mapbox/streets-v12"
-              >
-                {checkins
-                  .filter((c) => c.spot)
-                  .map((c) => (
-                    <Marker
-                      key={c.spot_id}
-                      longitude={c.spot.lng}
-                      latitude={c.spot.lat}
-                      anchor="bottom"
-                    >
-                      <div style={{ fontSize: "20px" }}>
-                        {c.is_favorite ? "⭐" : "✅"}
-                      </div>
-                    </Marker>
-                  ))}
-              </Map>
-            </div>
-          )}
-
-          {areaProgress.length > 0 && (
-            <div style={{ marginBottom: "1rem" }}>
-              {areaProgress.map(({ area, visited, total }) => (
-                <div
-                  key={area.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "13px",
-                    padding: "4px 0",
-                    borderBottom: "1px solid #f0f0f0",
-                  }}
-                >
-                  <span>{isEn ? (area.name_en ?? area.name) : area.name}</span>
-                  <span style={{ color: "#999" }}>
-                    {visited} / {total}
-                    {total > 0 && (
-                      <span style={{ marginLeft: "6px", color: "#bbb" }}>
-                        ({Math.round((visited / total) * 100)}%)
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {checkins.length === 0 && (
-            <p style={{ textAlign: "center", color: "#999", fontSize: "14px" }}>
-              {t("mypage.noVisits")}
-            </p>
-          )}
-
-          {checkins
-            .filter((c) => c.spot)
-            .map((c) => (
-              <div
-                key={c.spot_id}
+              / {targetSpots.length}
+            </span>
+            {targetSpots.length > 0 && (
+              <span
                 style={{
-                  padding: "12px",
-                  marginBottom: "6px",
-                  background: "white",
-                  border: "1px solid #eee",
-                  borderRadius: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
+                  fontSize: "var(--font-size-md)",
+                  color: "var(--color-text-muted)",
+                  marginLeft: "8px",
                 }}
               >
-                <span style={{ fontSize: "18px" }}>
-                  {c.is_favorite ? "⭐" : "✅"}
-                </span>
-                <div style={{ flex: 1 }}>
-                  <p
+                ({Math.round((visitedTargetCount / targetSpots.length) * 100)}%)
+              </span>
+            )}
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowMainOnly(!showMainOnly)}
+          style={{
+            width: "100%",
+            padding: "8px",
+            marginBottom: "var(--space-xl)",
+            background: "var(--color-card)",
+            border: "0.5px solid var(--color-primary)",
+            color: "var(--color-primary)",
+            borderRadius: "var(--radius-sm)",
+            cursor: "pointer",
+            fontSize: "var(--font-size-xs)",
+          }}
+        >
+          🔄 {showMainOnly ? "全件表示に切替" : "メインのみ表示に切替"}
+        </button>
+
+        {/* タブ */}
+        <div
+          style={{
+            display: "flex",
+            gap: "4px",
+            marginBottom: "var(--space-lg)",
+            borderBottom: "2px solid var(--color-primary)",
+          }}
+        >
+          {(
+            [
+              ["spots", t("mypage.tabSpots")],
+              ["history", t("mypage.tabHistory")],
+              ["routes", t("mypage.tabRoutes")],
+            ] as [typeof activeTab, string][]
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              style={{
+                flex: 1,
+                padding: "8px",
+                border: "none",
+                background:
+                  activeTab === key ? "var(--color-primary)" : "transparent",
+                color:
+                  activeTab === key
+                    ? "var(--color-white)"
+                    : "var(--color-text-sub)",
+                cursor: "pointer",
+                fontSize: "var(--font-size-sm)",
+                borderRadius: "var(--radius-sm) var(--radius-sm) 0 0",
+                fontWeight: activeTab === key ? "500" : "normal",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* 訪問済みタブ */}
+        {activeTab === "spots" && (
+          <div>
+            {checkins.length > 0 && (
+              <div
+                style={{
+                  height: "200px",
+                  borderRadius: "var(--radius-md)",
+                  overflow: "hidden",
+                  marginBottom: "var(--space-lg)",
+                  border: "0.5px solid var(--color-border)",
+                }}
+              >
+                <Map
+                  mapboxAccessToken={MAPBOX_TOKEN}
+                  initialViewState={{
+                    longitude: 130.2988,
+                    latitude: 33.2494,
+                    zoom: 8.5,
+                  }}
+                  style={{ width: "100%", height: "100%" }}
+                  mapStyle="mapbox://styles/mapbox/streets-v12"
+                >
+                  {checkins
+                    .filter((c) => c.spot)
+                    .map((c) => (
+                      <Marker
+                        key={c.spot_id}
+                        longitude={c.spot.lng}
+                        latitude={c.spot.lat}
+                        anchor="bottom"
+                      >
+                        <div style={{ fontSize: "20px" }}>
+                          {c.is_favorite ? "⭐" : "✅"}
+                        </div>
+                      </Marker>
+                    ))}
+                </Map>
+              </div>
+            )}
+
+            {/* エリア別進捗 */}
+            {areaProgress.length > 0 && (
+              <div
+                style={{
+                  background: "var(--color-card)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-sm)",
+                  padding: "var(--space-md) var(--space-lg)",
+                  marginBottom: "var(--space-lg)",
+                }}
+              >
+                {areaProgress.map(({ area, visited, total }) => (
+                  <div
+                    key={area.id}
                     style={{
-                      margin: "0 0 2px",
-                      fontWeight: "bold",
-                      fontSize: "14px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "var(--space-xs) 0",
+                      borderBottom: "0.5px solid var(--color-border-light)",
                     }}
                   >
-                    {isEn ? (c.spot.name_en ?? c.spot.name) : c.spot.name}
-                  </p>
-                  <p style={{ margin: 0, fontSize: "11px", color: "#999" }}>
-                    {t("mypage.firstVisit")}
-                    {new Date(c.first_visited_at).toLocaleDateString()}
-                  </p>
+                    <span
+                      style={{
+                        fontSize: "var(--font-size-sm)",
+                        color: "var(--color-text-main)",
+                      }}
+                    >
+                      {isEn ? (area.name_en ?? area.name) : area.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--color-text-muted)",
+                      }}
+                    >
+                      {visited} / {total}
+                      {total > 0 && (
+                        <span
+                          style={{
+                            marginLeft: "6px",
+                            color: "var(--color-primary)",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {Math.round((visited / total) * 100)}%
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {checkins.length === 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "var(--color-text-muted)",
+                  fontSize: "var(--font-size-sm)",
+                }}
+              >
+                {t("mypage.noVisits")}
+              </p>
+            )}
+
+            {checkins
+              .filter((c) => c.spot)
+              .map((c) => (
+                <div
+                  key={c.spot_id}
+                  style={{
+                    background: "var(--color-card)",
+                    borderRadius: "var(--radius-md)",
+                    borderLeft:
+                      "3px solid " +
+                      (c.is_favorite ? "#F5C842" : "var(--color-border)"),
+                    padding: "var(--space-md) var(--space-lg)",
+                    marginBottom: "var(--space-sm)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--space-md)",
+                    boxShadow: "var(--shadow-sm)",
+                  }}
+                >
+                  <span style={{ fontSize: "18px" }}>
+                    {c.is_favorite ? "⭐" : "✅"}
+                  </span>
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        margin: "0 0 2px",
+                        fontWeight: "500",
+                        fontSize: "var(--font-size-md)",
+                        color: "var(--color-text-main)",
+                      }}
+                    >
+                      {isEn ? (c.spot.name_en ?? c.spot.name) : c.spot.name}
+                    </p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "var(--font-size-xs)",
+                        color: "var(--color-text-muted)",
+                      }}
+                    >
+                      {t("mypage.firstVisit")}
+                      {new Date(c.first_visited_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
+              ))}
+          </div>
+        )}
+
+        {/* 履歴タブ */}
+        {activeTab === "history" && (
+          <div>
+            {visitLogs.length === 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "var(--color-text-muted)",
+                  fontSize: "var(--font-size-sm)",
+                }}
+              >
+                {t("mypage.noHistory")}
+              </p>
+            )}
+            {visitLogs.map((log) => (
+              <div
+                key={log.id}
+                style={{
+                  background: "var(--color-card)",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "var(--space-sm) var(--space-md)",
+                  marginBottom: "var(--space-xs)",
+                  fontSize: "var(--font-size-sm)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <span style={{ color: "var(--color-text-main)" }}>
+                  {log.spot
+                    ? isEn
+                      ? (log.spot.name_en ?? log.spot.name)
+                      : log.spot.name
+                    : t("mypage.deletedSpot")}
+                </span>
+                <span
+                  style={{
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--color-text-muted)",
+                    whiteSpace: "nowrap",
+                    marginLeft: "var(--space-sm)",
+                  }}
+                >
+                  {new Date(log.visited_at).toLocaleString()}
+                </span>
               </div>
             ))}
-        </div>
-      )}
+          </div>
+        )}
 
-      {activeTab === "history" && (
-        <div>
-          {visitLogs.length === 0 && (
-            <p style={{ textAlign: "center", color: "#999", fontSize: "14px" }}>
-              {t("mypage.noHistory")}
-            </p>
-          )}
-          {visitLogs.map((log) => (
-            <div
-              key={log.id}
-              style={{
-                padding: "10px 12px",
-                marginBottom: "4px",
-                background: "white",
-                border: "1px solid #eee",
-                borderRadius: "8px",
-                fontSize: "13px",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <span>
-                {log.spot
-                  ? isEn
-                    ? (log.spot.name_en ?? log.spot.name)
-                    : log.spot.name
-                  : t("mypage.deletedSpot")}
-              </span>
-              <span style={{ color: "#999" }}>
-                {new Date(log.visited_at).toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {activeTab === "routes" && (
-        <div>
-          {routes.length === 0 && (
-            <p style={{ textAlign: "center", color: "#999", fontSize: "14px" }}>
-              {t("mypage.noRoutes")}
-            </p>
-          )}
-          {routes.map((route) => (
-            <Link
-              key={route.id}
-              to={`/routes/${route.id}`}
-              style={{
-                display: "block",
-                padding: "12px",
-                marginBottom: "6px",
-                background: "white",
-                border: "1px solid #eee",
-                borderRadius: "8px",
-                textDecoration: "none",
-                color: "inherit",
-                fontSize: "13px",
-              }}
-            >
-              <p style={{ margin: "0 0 4px", fontWeight: "bold" }}>
-                {route.name ||
-                  (route.transport_mode === "car"
-                    ? t("mypage.carRoute")
+        {/* ルートタブ */}
+        {activeTab === "routes" && (
+          <div>
+            {routes.length === 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "var(--color-text-muted)",
+                  fontSize: "var(--font-size-sm)",
+                }}
+              >
+                {t("mypage.noRoutes")}
+              </p>
+            )}
+            {routes.map((route) => (
+              <Link
+                key={route.id}
+                to={`/routes/${route.id}`}
+                style={{
+                  display: "block",
+                  marginBottom: "var(--space-sm)",
+                  background: "var(--color-card)",
+                  borderRadius: "var(--radius-md)",
+                  borderLeft: "3px solid var(--color-primary)",
+                  padding: "var(--space-md) var(--space-lg)",
+                  textDecoration: "none",
+                  color: "inherit",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <p
+                  style={{
+                    margin: "0 0 2px",
+                    fontWeight: "500",
+                    fontSize: "var(--font-size-md)",
+                    color: "var(--color-text-main)",
+                  }}
+                >
+                  {route.name ||
+                    (route.transport_mode === "car"
+                      ? t("mypage.carRoute")
+                      : route.transport_mode === "transit"
+                        ? t("route.transit")
+                        : t("mypage.transitRoute"))}
+                </p>
+                <p
+                  style={{
+                    margin: "0 0 2px",
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  {route.transport_mode === "car"
+                    ? t("route.car")
                     : route.transport_mode === "transit"
                       ? t("route.transit")
-                      : t("mypage.transitRoute"))}
-              </p>
-              <p style={{ margin: "0 0 2px", color: "#999", fontSize: "11px" }}>
-                {route.transport_mode === "car"
-                  ? t("route.car")
-                  : route.transport_mode === "transit"
-                    ? t("route.transit")
-                    : t("route.walk")}
-              </p>
-              <p style={{ margin: 0, color: "#999", fontSize: "12px" }}>
-                {t("mypage.total")}
-                {route.total_minutes}
-                {t("route.minutes")} ・{" "}
-                {new Date(route.created_at).toLocaleDateString()}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
+                      : t("route.walk")}
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  {t("mypage.total")}
+                  {route.total_minutes}
+                  {t("route.minutes")} ・{" "}
+                  {new Date(route.created_at).toLocaleDateString()}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
