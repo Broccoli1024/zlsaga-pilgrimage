@@ -15,7 +15,6 @@ interface Category {
   name: string;
   name_en: string | null;
 }
-
 type SacredFilter = "all" | "sacred" | "non_sacred";
 
 export default function SpotListPage() {
@@ -42,7 +41,10 @@ export default function SpotListPage() {
         await Promise.all([
           supabase.from("spots").select("*").eq("is_published", true),
           supabase.from("areas").select("id, name, name_en").order("name"),
-          supabase.from("categories").select("id, name, name_en").order("name"),
+          supabase
+            .from("categories")
+            .select("id, name, name_en")
+            .order("sort_order"),
           supabase
             .from("significance_tags")
             .select("id, name, name_en, sort_order")
@@ -60,8 +62,8 @@ export default function SpotListPage() {
 
   useEffect(() => {
     document.title = isEn
-      ? "Spot List | Zombie Land Saga Pilgrimage"
-      : "スポット一覧 | ゾンビランドサガ 聖地巡礼";
+      ? "Spot List | Pilgrimage App"
+      : "スポット一覧 | 聖地巡礼アプリ";
   }, [isEn]);
 
   const sacredTagId = significanceTags.find((t) => t.name === "聖地")?.id;
@@ -112,216 +114,292 @@ export default function SpotListPage() {
     return isEn ? (cat?.name_en ?? cat?.name ?? "") : (cat?.name ?? "");
   };
 
+  const selectStyle = {
+    padding: "7px 10px",
+    borderRadius: "var(--radius-sm)",
+    border: "0.5px solid var(--color-border)",
+    background: "var(--color-card)",
+    color: "var(--color-text-main)",
+    fontSize: "var(--font-size-sm)",
+    outline: "none",
+  };
+
+  const toggleBtnStyle = (active: boolean) => ({
+    padding: "6px 12px",
+    fontSize: "var(--font-size-sm)",
+    borderRadius: "var(--radius-sm)",
+    border: active
+      ? "0.5px solid var(--color-primary)"
+      : "0.5px solid var(--color-border)",
+    background: active ? "var(--color-primary-light)" : "var(--color-card)",
+    color: active ? "var(--color-primary)" : "var(--color-text-sub)",
+    cursor: "pointer",
+    fontWeight: active ? "500" : "normal",
+  });
+
   return (
-    <div style={{ maxWidth: "720px", margin: "0 auto", padding: "1.5rem" }}>
+    <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
+          maxWidth: "720px",
+          margin: "0 auto",
+          padding: "var(--space-xl) var(--space-lg)",
         }}
       >
-        <Link to="/" style={{ fontSize: "13px", color: "#666" }}>
-          ← {t("route.backToMap")}
-        </Link>
-        <LangToggle />
-      </div>
+        {/* ヘッダー */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "var(--space-xl)",
+          }}
+        >
+          <Link
+            to="/"
+            style={{
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              textDecoration: "none",
+            }}
+          >
+            ← {t("route.backToMap")}
+          </Link>
+          <LangToggle />
+        </div>
 
-      <h1 style={{ fontSize: "22px", marginBottom: "0.5rem" }}>
-        {isEn
-          ? "Zombie Land Saga Pilgrimage Spots"
-          : "ゾンビランドサガ 聖地・スポット一覧"}
-      </h1>
-      <p style={{ fontSize: "13px", color: "#999", marginBottom: "1.5rem" }}>
-        {isEn
-          ? "All locations featured in Zombie Land Saga, located in Saga Prefecture."
-          : "佐賀県内のゾンビランドサガ聖地・関連スポットの一覧です。"}
-      </p>
+        <div
+          style={{
+            borderLeft: "3px solid var(--color-primary)",
+            paddingLeft: "var(--space-md)",
+            marginBottom: "var(--space-sm)",
+          }}
+        >
+          <h1
+            style={{
+              margin: "0 0 4px",
+              fontSize: "var(--font-size-xl)",
+              fontWeight: "500",
+              color: "var(--color-text-main)",
+            }}
+          >
+            {isEn ? "Pilgrimage Spots" : "聖地・スポット一覧"}
+          </h1>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+            }}
+          >
+            {isEn
+              ? "All locations featured in the series."
+              : "佐賀県内の聖地・関連スポットの一覧です。"}
+          </p>
+        </div>
 
-      {/* フィルタ */}
-      <div
-        style={{
-          display: "flex",
-          gap: "6px",
-          marginBottom: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", gap: "4px" }}>
-          {(
-            [
-              ["all", isEn ? "All" : "すべて"],
-              ["sacred", isEn ? "Sacred only" : "聖地のみ"],
-              ["non_sacred", isEn ? "Spots only" : "観光のみ"],
-            ] as [SacredFilter, string][]
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => setSacredFilter(value)}
+        {/* フィルタ */}
+        <div
+          style={{
+            background: "var(--color-card)",
+            borderRadius: "var(--radius-md)",
+            boxShadow: "var(--shadow-sm)",
+            padding: "var(--space-md) var(--space-lg)",
+            marginBottom: "var(--space-lg)",
+            borderTop: "2px solid var(--color-primary)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "4px",
+              marginBottom: "var(--space-sm)",
+              flexWrap: "wrap",
+            }}
+          >
+            {(
+              [
+                ["all", isEn ? "All" : "すべて"],
+                ["sacred", isEn ? "Sacred only" : "聖地のみ"],
+                ["non_sacred", isEn ? "Spots only" : "観光のみ"],
+              ] as [SacredFilter, string][]
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                onClick={() => setSacredFilter(value)}
+                style={toggleBtnStyle(sacredFilter === value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-sm)",
+              flexWrap: "wrap",
+            }}
+          >
+            <select
+              value={areaFilter}
+              onChange={(e) => setAreaFilter(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="all">
+                {isEn ? "Area: All" : "エリア：すべて"}
+              </option>
+              {areas.map((area) => (
+                <option key={area.id} value={area.id}>
+                  {isEn ? (area.name_en ?? area.name) : area.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="all">
+                {isEn ? "Category: All" : "カテゴリ：すべて"}
+              </option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {isEn ? (cat.name_en ?? cat.name) : cat.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={tagFilter}
+              onChange={(e) => setTagFilter(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="all">
+                {isEn ? "Tag: All" : "登場度：すべて"}
+              </option>
+              {significanceTags
+                .filter((t) => t.name !== "聖地")
+                .map((tag) => (
+                  <option key={tag.id} value={tag.id}>
+                    {isEn ? (tag.name_en ?? tag.name) : tag.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        </div>
+
+        <p
+          style={{
+            fontSize: "var(--font-size-xs)",
+            color: "var(--color-text-muted)",
+            marginBottom: "var(--space-sm)",
+          }}
+        >
+          {filteredSpots.length} {isEn ? "spots" : "件"}
+        </p>
+
+        {/* スポットカード一覧 */}
+        <div style={{ display: "grid", gap: "var(--space-sm)" }}>
+          {filteredSpots.map((spot) => (
+            <Link
+              key={spot.id}
+              to={`/spots/${spot.id}`}
               style={{
-                padding: "6px 12px",
-                fontSize: "13px",
-                borderRadius: "6px",
-                border: "1px solid",
-                borderColor: sacredFilter === value ? "#2196F3" : "#ddd",
-                background: sacredFilter === value ? "#E3F2FD" : "white",
-                cursor: "pointer",
+                display: "block",
+                background: "var(--color-card)",
+                borderRadius: "var(--radius-md)",
+                borderLeft:
+                  "3px solid " +
+                  (isSpotSacred(spot)
+                    ? "var(--color-primary)"
+                    : "var(--color-border)"),
+                padding: "var(--space-md) var(--space-lg)",
+                textDecoration: "none",
+                color: "inherit",
+                boxShadow: "var(--shadow-sm)",
               }}
             >
-              {label}
-            </button>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p
+                    style={{
+                      margin: "0 0 4px",
+                      fontWeight: "500",
+                      fontSize: "var(--font-size-md)",
+                      color: "var(--color-text-main)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {isEn ? (spot.name_en ?? spot.name) : spot.name}
+                  </p>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "4px",
+                      fontSize: "var(--font-size-xs)",
+                      color: "var(--color-text-muted)",
+                    }}
+                  >
+                    <span>{getAreaName(spot.area_id)}</span>
+                    {spot.category_id && (
+                      <span>・{getCategoryName(spot.category_id)}</span>
+                    )}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: "var(--font-size-xs)",
+                    padding: "2px 8px",
+                    borderRadius: "var(--radius-sm)",
+                    whiteSpace: "nowrap",
+                    marginLeft: "var(--space-sm)",
+                    background: isSpotSacred(spot)
+                      ? "var(--color-primary-light)"
+                      : "var(--color-bg)",
+                    color: isSpotSacred(spot)
+                      ? "var(--color-primary)"
+                      : "var(--color-text-sub)",
+                    border: `0.5px solid ${isSpotSacred(spot) ? "var(--color-primary)" : "var(--color-border)"}`,
+                  }}
+                >
+                  {isSpotSacred(spot)
+                    ? isEn
+                      ? "Sacred"
+                      : "聖地"
+                    : isEn
+                      ? "Spot"
+                      : "観光"}
+                </span>
+              </div>
+            </Link>
           ))}
         </div>
 
-        <select
-          value={areaFilter}
-          onChange={(e) => setAreaFilter(e.target.value)}
-          style={{
-            padding: "6px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
-            fontSize: "13px",
-          }}
-        >
-          <option value="all">{isEn ? "Area: All" : "エリア：すべて"}</option>
-          {areas.map((area) => (
-            <option key={area.id} value={area.id}>
-              {isEn ? (area.name_en ?? area.name) : area.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          style={{
-            padding: "6px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
-            fontSize: "13px",
-          }}
-        >
-          <option value="all">
-            {isEn ? "Category: All" : "カテゴリ：すべて"}
-          </option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {isEn ? (cat.name_en ?? cat.name) : cat.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={tagFilter}
-          onChange={(e) => setTagFilter(e.target.value)}
-          style={{
-            padding: "6px",
-            borderRadius: "6px",
-            border: "1px solid #ddd",
-            fontSize: "13px",
-          }}
-        >
-          <option value="all">{isEn ? "Tag: All" : "登場度：すべて"}</option>
-          {significanceTags
-            .filter((t) => t.name !== "聖地")
-            .map((tag) => (
-              <option key={tag.id} value={tag.id}>
-                {isEn ? (tag.name_en ?? tag.name) : tag.name}
-              </option>
-            ))}
-        </select>
-      </div>
-
-      <p style={{ fontSize: "12px", color: "#999", marginBottom: "0.5rem" }}>
-        {filteredSpots.length} {isEn ? "spots" : "件"}
-      </p>
-
-      {/* スポットカード一覧 */}
-      <div style={{ display: "grid", gap: "10px" }}>
-        {filteredSpots.map((spot) => (
-          <Link
-            key={spot.id}
-            to={`/spots/${spot.id}`}
+        {filteredSpots.length === 0 && (
+          <p
             style={{
-              display: "block",
-              padding: "14px",
-              background: "white",
-              border: "1px solid #eee",
-              borderRadius: "10px",
-              textDecoration: "none",
-              color: "inherit",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              textAlign: "center",
+              color: "var(--color-text-muted)",
+              fontSize: "var(--font-size-sm)",
+              marginTop: "var(--space-xl)",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-              }}
-            >
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 4px",
-                    fontWeight: "bold",
-                    fontSize: "15px",
-                  }}
-                >
-                  {isEn ? (spot.name_en ?? spot.name) : spot.name}
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "6px",
-                    fontSize: "11px",
-                    color: "#999",
-                  }}
-                >
-                  <span>{getAreaName(spot.area_id)}</span>
-                  {spot.category_id && (
-                    <span>・{getCategoryName(spot.category_id)}</span>
-                  )}
-                </div>
-              </div>
-              <span
-                style={{
-                  fontSize: "11px",
-                  padding: "2px 8px",
-                  borderRadius: "10px",
-                  background: isSpotSacred(spot) ? "#FFEBEE" : "#E3F2FD",
-                  color: isSpotSacred(spot) ? "#C62828" : "#1565C0",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {isSpotSacred(spot)
-                  ? isEn
-                    ? "Sacred"
-                    : "聖地"
-                  : isEn
-                    ? "Spot"
-                    : "観光"}
-              </span>
-            </div>
-          </Link>
-        ))}
+            {isEn
+              ? "No spots match your filters."
+              : "条件に合うスポットがありません"}
+          </p>
+        )}
       </div>
-
-      {filteredSpots.length === 0 && (
-        <p
-          style={{
-            textAlign: "center",
-            color: "#999",
-            fontSize: "14px",
-            marginTop: "2rem",
-          }}
-        >
-          {isEn
-            ? "No spots match your filters."
-            : "条件に合うスポットがありません"}
-        </p>
-      )}
     </div>
   );
 }

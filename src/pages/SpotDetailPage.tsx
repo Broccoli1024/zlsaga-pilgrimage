@@ -66,7 +66,6 @@ export default function SpotDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-
     const fetchSpot = async () => {
       const { data: spotData, error } = await supabase
         .from("spots")
@@ -74,7 +73,6 @@ export default function SpotDetailPage() {
         .eq("id", id)
         .eq("is_published", true)
         .single();
-
       if (error || !spotData) {
         setNotFound(true);
         return;
@@ -103,11 +101,13 @@ export default function SpotDetailPage() {
         .select("character_id")
         .eq("spot_id", spotData.id);
       if (charLinks && charLinks.length > 0) {
-        const charIds = charLinks.map((c) => c.character_id);
         const { data: chars } = await supabase
           .from("characters")
           .select("id, name, name_en, color_code")
-          .in("id", charIds)
+          .in(
+            "id",
+            charLinks.map((c) => c.character_id),
+          )
           .order("sort_order");
         setCharacters(chars ?? []);
       }
@@ -117,38 +117,36 @@ export default function SpotDetailPage() {
         .select("episode_id, scene_description, scene_description_en")
         .eq("spot_id", spotData.id);
       if (epLinks && epLinks.length > 0) {
-        const epIds = epLinks.map((e) => e.episode_id);
         const { data: eps } = await supabase
           .from("episodes")
           .select("id, media_type, season, episode_number, title, title_en")
-          .in("id", epIds);
-        const merged = (eps ?? []).map((ep) => {
-          const link = epLinks.find((l) => l.episode_id === ep.id);
-          return {
-            ...ep,
-            scene_description: link?.scene_description ?? null,
-            scene_description_en: link?.scene_description_en ?? null,
-          };
-        });
-        setEpisodes(merged);
+          .in(
+            "id",
+            epLinks.map((e) => e.episode_id),
+          );
+        setEpisodes(
+          (eps ?? []).map((ep) => {
+            const link = epLinks.find((l) => l.episode_id === ep.id);
+            return {
+              ...ep,
+              scene_description: link?.scene_description ?? null,
+              scene_description_en: link?.scene_description_en ?? null,
+            };
+          }),
+        );
       }
 
       const { data: tagLinks } = await supabase
         .from("spot_significance_tags")
         .select("tag_id")
         .eq("spot_id", spotData.id);
-
-      if (tagLinks) {
-        setSpotTagIds(tagLinks.map((t) => t.tag_id));
-      }
-
+      if (tagLinks) setSpotTagIds(tagLinks.map((t) => t.tag_id));
       const { data: allTags } = await supabase
         .from("significance_tags")
         .select("id, name, name_en")
         .order("sort_order");
       if (allTags) setSignificanceTags(allTags);
     };
-
     fetchSpot();
   }, [id]);
 
@@ -173,8 +171,8 @@ export default function SpotDetailPage() {
     if (!spot) return;
     const name = isEn ? (spot.name_en ?? spot.name) : spot.name;
     document.title = isEn
-      ? `${name} | Zombie Land Saga Pilgrimage`
-      : `${name} | ゾンビランドサガ 聖地巡礼`;
+      ? `${name} | Pilgrimage App`
+      : `${name} | 聖地巡礼アプリ`;
   }, [spot, isEn]);
 
   const handleCheckin = async () => {
@@ -221,16 +219,59 @@ export default function SpotDetailPage() {
 
   if (notFound) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p>{isEn ? "Spot not found." : "スポットが見つかりません。"}</p>
-        <Link to="/spots">{isEn ? "Back to list" : "一覧に戻る"}</Link>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--color-bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: "var(--color-card)",
+            borderRadius: "var(--radius-lg)",
+            padding: "var(--space-xl)",
+            textAlign: "center",
+            borderTop: "2px solid var(--color-primary)",
+          }}
+        >
+          <p
+            style={{
+              color: "var(--color-text-sub)",
+              marginBottom: "var(--space-md)",
+            }}
+          >
+            {isEn ? "Spot not found." : "スポットが見つかりません。"}
+          </p>
+          <Link
+            to="/spots"
+            style={{
+              color: "var(--color-primary)",
+              textDecoration: "underline",
+            }}
+          >
+            {isEn ? "Back to list" : "一覧に戻る"}
+          </Link>
+        </div>
       </div>
     );
   }
 
   if (!spot) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>読み込み中...</div>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--color-bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ color: "var(--color-text-muted)" }}>読み込み中...</p>
+      </div>
     );
   }
 
@@ -240,7 +281,6 @@ export default function SpotDetailPage() {
   const otherTags = significanceTags.filter(
     (t) => t.name !== "聖地" && spotTagIds.includes(t.id),
   );
-
   const name = isEn ? (spot.name_en ?? spot.name) : spot.name;
   const description = isEn
     ? (spot.description_en ?? spot.description)
@@ -248,299 +288,394 @@ export default function SpotDetailPage() {
   const address = isEn ? (spot.address_en ?? spot.address) : spot.address;
 
   return (
-    <div style={{ maxWidth: "560px", margin: "0 auto", padding: "1.5rem" }}>
+    <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1rem",
+          maxWidth: "560px",
+          margin: "0 auto",
+          padding: "var(--space-xl) var(--space-lg)",
         }}
       >
-        <Link to="/spots" style={{ fontSize: "13px", color: "#666" }}>
-          ← {isEn ? "Spot List" : "スポット一覧"}
-        </Link>
-        <LangToggle />
-      </div>
-
-      <h1 style={{ fontSize: "22px", marginBottom: "0.5rem" }}>{name}</h1>
-
-      <div
-        style={{
-          display: "flex",
-          gap: "6px",
-          marginBottom: "1rem",
-          fontSize: "12px",
-        }}
-      >
-        {area && (
-          <span
-            style={{
-              background: "#f0f0f0",
-              padding: "2px 10px",
-              borderRadius: "10px",
-            }}
-          >
-            {isEn ? (area.name_en ?? area.name) : area.name}
-          </span>
-        )}
-        {category && (
-          <span
-            style={{
-              background: "#f0f0f0",
-              padding: "2px 10px",
-              borderRadius: "10px",
-            }}
-          >
-            {isEn ? (category.name_en ?? category.name) : category.name}
-          </span>
-        )}
-        <span
+        {/* ヘッダー */}
+        <div
           style={{
-            background: isSacred ? "#FFEBEE" : "#E3F2FD",
-            color: isSacred ? "#C62828" : "#1565C0",
-            padding: "2px 10px",
-            borderRadius: "10px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "var(--space-xl)",
           }}
         >
-          {isSacred ? (isEn ? "Sacred" : "聖地") : isEn ? "Spot" : "観光"}
-        </span>
-      </div>
-
-      {description && (
-        <p
-          style={{
-            fontSize: "14px",
-            color: "#444",
-            lineHeight: 1.7,
-            marginBottom: "1rem",
-          }}
-        >
-          {description}
-        </p>
-      )}
-
-      {address && (
-        <p style={{ fontSize: "13px", color: "#777", marginBottom: "0.5rem" }}>
-          📍 {address}
-        </p>
-      )}
-
-      {spot.duration_min && (
-        <p style={{ fontSize: "13px", color: "#777", marginBottom: "1rem" }}>
-          ⏱ {isEn ? "Approx." : "滞在目安：約"} {spot.duration_min}{" "}
-          {isEn ? "min" : "分"}
-        </p>
-      )}
-
-      {/* 登場キャラクター */}
-      {characters.length > 0 && (
-        <div style={{ marginBottom: "1rem" }}>
-          <p
+          <Link
+            to="/spots"
             style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              color: "#777",
-              marginBottom: "6px",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              textDecoration: "none",
             }}
           >
-            {isEn ? "Characters" : "登場キャラクター"}
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {characters.map((c) => (
+            ← {isEn ? "Spot List" : "スポット一覧"}
+          </Link>
+          <LangToggle />
+        </div>
+
+        {/* スポット名 */}
+        <div
+          style={{
+            borderLeft: "3px solid var(--color-primary)",
+            paddingLeft: "var(--space-md)",
+            marginBottom: "var(--space-md)",
+          }}
+        >
+          <h1
+            style={{
+              margin: "0 0 var(--space-sm)",
+              fontSize: "var(--font-size-xl)",
+              fontWeight: "500",
+              color: "var(--color-text-main)",
+            }}
+          >
+            {name}
+          </h1>
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-xs)",
+              flexWrap: "wrap",
+            }}
+          >
+            {area && (
               <span
-                key={c.id}
                 style={{
-                  fontSize: "12px",
-                  padding: "3px 10px",
-                  borderRadius: "12px",
-                  background: c.color_code ? `${c.color_code}33` : "#eee",
-                  border: `1px solid ${c.color_code ?? "#ccc"}`,
+                  fontSize: "var(--font-size-xs)",
+                  padding: "2px 8px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "var(--color-bg)",
+                  color: "var(--color-text-sub)",
+                  border: "0.5px solid var(--color-border)",
                 }}
               >
-                {isEn ? (c.name_en ?? c.name) : c.name}
+                {isEn ? (area.name_en ?? area.name) : area.name}
               </span>
-            ))}
+            )}
+            {category && (
+              <span
+                style={{
+                  fontSize: "var(--font-size-xs)",
+                  padding: "2px 8px",
+                  borderRadius: "var(--radius-sm)",
+                  background: "var(--color-bg)",
+                  color: "var(--color-text-sub)",
+                  border: "0.5px solid var(--color-border)",
+                }}
+              >
+                {isEn ? (category.name_en ?? category.name) : category.name}
+              </span>
+            )}
+            <span
+              style={{
+                fontSize: "var(--font-size-xs)",
+                padding: "2px 8px",
+                borderRadius: "var(--radius-sm)",
+                background: isSacred
+                  ? "var(--color-primary-light)"
+                  : "var(--color-bg)",
+                color: isSacred
+                  ? "var(--color-primary)"
+                  : "var(--color-text-sub)",
+                border: `0.5px solid ${isSacred ? "var(--color-primary)" : "var(--color-border)"}`,
+              }}
+            >
+              {isSacred ? (isEn ? "Sacred" : "聖地") : isEn ? "Spot" : "観光"}
+            </span>
           </div>
         </div>
-      )}
 
-      {otherTags.length > 0 && (
-        <div style={{ marginBottom: "1rem" }}>
-          <p
+        {/* 重要度タグ */}
+        {otherTags.length > 0 && (
+          <div
             style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              color: "#777",
-              marginBottom: "6px",
+              display: "flex",
+              gap: "var(--space-xs)",
+              flexWrap: "wrap",
+              marginBottom: "var(--space-md)",
             }}
           >
-            {isEn ? "Tags" : "タグ"}
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {otherTags.map((tag) => (
               <span
                 key={tag.id}
                 style={{
-                  fontSize: "12px",
-                  padding: "3px 10px",
-                  borderRadius: "12px",
-                  background: "#FFF3E0",
-                  color: "#E65100",
+                  fontSize: "var(--font-size-xs)",
+                  background: "var(--color-primary-light)",
+                  color: "var(--color-primary)",
+                  padding: "2px 8px",
+                  borderRadius: "var(--radius-sm)",
+                  border: "0.5px solid var(--color-primary)",
                 }}
               >
                 {isEn ? (tag.name_en ?? tag.name) : tag.name}
               </span>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 登場エピソード */}
-      {episodes.length > 0 && (
-        <div style={{ marginBottom: "1rem" }}>
+        {/* 説明 */}
+        {description && (
           <p
             style={{
-              fontSize: "13px",
-              fontWeight: "bold",
-              color: "#777",
-              marginBottom: "6px",
+              fontSize: "var(--font-size-md)",
+              color: "var(--color-text-sub)",
+              lineHeight: 1.7,
+              marginBottom: "var(--space-md)",
             }}
           >
-            {isEn ? "Featured Episodes" : "登場エピソード"}
+            {description}
           </p>
-          {episodes.map((ep) => (
+        )}
+
+        {/* 住所・滞在時間 */}
+        {address && (
+          <p
+            style={{
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              marginBottom: "var(--space-xs)",
+            }}
+          >
+            📍 {address}
+          </p>
+        )}
+        {spot.duration_min && (
+          <p
+            style={{
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              marginBottom: "var(--space-md)",
+            }}
+          >
+            ⏱ {isEn ? "Approx." : "滞在目安：約"} {spot.duration_min}{" "}
+            {isEn ? "min" : "分"}
+          </p>
+        )}
+
+        {/* 登場キャラクター */}
+        {characters.length > 0 && (
+          <div
+            style={{
+              background: "var(--color-card)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-md) var(--space-lg)",
+              marginBottom: "var(--space-md)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <p
+              style={{
+                margin: "0 0 var(--space-sm)",
+                fontSize: "var(--font-size-xs)",
+                fontWeight: "500",
+                color: "var(--color-text-muted)",
+              }}
+            >
+              {isEn ? "Characters" : "登場キャラクター"}
+            </p>
             <div
-              key={ep.id}
               style={{
-                fontSize: "13px",
-                color: "#555",
-                marginBottom: "6px",
-                padding: "8px",
-                background: "#fafafa",
-                borderRadius: "6px",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "var(--space-xs)",
               }}
             >
-              <strong>
-                {seasonLabel(ep.season, ep.media_type, isEn)}
-                {ep.media_type !== "movie" &&
-                  (isEn
-                    ? ` Ep.${ep.episode_number}`
-                    : ` 第${ep.episode_number}話`)}
-              </strong>{" "}
-              {isEn ? (ep.title_en ?? ep.title) : ep.title}
-              {(isEn ? ep.scene_description_en : ep.scene_description) && (
-                <div style={{ color: "#999", marginTop: "2px" }}>
-                  {isEn ? ep.scene_description_en : ep.scene_description}
-                </div>
-              )}
+              {characters.map((c) => (
+                <span
+                  key={c.id}
+                  style={{
+                    fontSize: "var(--font-size-xs)",
+                    padding: "3px 10px",
+                    borderRadius: "var(--radius-sm)",
+                    background: c.color_code
+                      ? `${c.color_code}22`
+                      : "var(--color-bg)",
+                    border: `0.5px solid ${c.color_code ?? "var(--color-border)"}`,
+                    color: "var(--color-text-main)",
+                  }}
+                >
+                  {isEn ? (c.name_en ?? c.name) : c.name}
+                </span>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* 地図 */}
-      <div
-        style={{
-          height: "220px",
-          borderRadius: "10px",
-          overflow: "hidden",
-          marginBottom: "1rem",
-          border: "1px solid #eee",
-        }}
-      >
-        <Map
-          mapboxAccessToken={MAPBOX_TOKEN}
-          initialViewState={{
-            longitude: spot.lng,
-            latitude: spot.lat,
-            zoom: 14,
-          }}
-          style={{ width: "100%", height: "100%" }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
-        >
-          <Marker longitude={spot.lng} latitude={spot.lat} anchor="bottom">
-            <div style={{ fontSize: "26px" }}>{isSacred ? "📍" : "🗺️"}</div>
-          </Marker>
-        </Map>
-      </div>
-
-      <button
-        onClick={() => navigate(`/?spot=${spot.id}`)}
-        style={{
-          width: "100%",
-          padding: "10px",
-          marginBottom: "1rem",
-          background: "white",
-          border: "1px solid #ddd",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "13px",
-        }}
-      >
-        🗺️ {isEn ? "View on full map" : "地図で見る"}
-      </button>
-
-      {/* チェックインボタン */}
-      {user ? (
-        checkedIn ? (
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              onClick={handleToggleFavorite}
+        {/* 登場エピソード */}
+        {episodes.length > 0 && (
+          <div
+            style={{
+              background: "var(--color-card)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-md) var(--space-lg)",
+              marginBottom: "var(--space-md)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <p
               style={{
-                padding: "10px 14px",
-                cursor: "pointer",
-                background: isFavorite ? "#FFC107" : "#f5f5f5",
-                color: isFavorite ? "white" : "#777",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
+                margin: "0 0 var(--space-sm)",
+                fontSize: "var(--font-size-xs)",
+                fontWeight: "500",
+                color: "var(--color-text-muted)",
               }}
             >
-              {isFavorite
-                ? `⭐ ${isEn ? "Favorited" : "お気に入り"}`
-                : `☆ ${isEn ? "Favorite" : "お気に入り"}`}
-            </button>
+              {isEn ? "Featured Episodes" : "登場エピソード"}
+            </p>
+            {episodes.map((ep) => (
+              <div
+                key={ep.id}
+                style={{
+                  fontSize: "var(--font-size-sm)",
+                  color: "var(--color-text-sub)",
+                  marginBottom: "var(--space-sm)",
+                  paddingLeft: "var(--space-xs)",
+                  borderLeft: "2px solid var(--color-primary-light)",
+                }}
+              >
+                <strong style={{ color: "var(--color-primary)" }}>
+                  {seasonLabel(ep.season, ep.media_type, isEn)}
+                  {ep.media_type !== "movie" &&
+                    (isEn
+                      ? ` Ep.${ep.episode_number}`
+                      : ` 第${ep.episode_number}話`)}
+                </strong>{" "}
+                {isEn ? (ep.title_en ?? ep.title) : ep.title}
+                {(isEn ? ep.scene_description_en : ep.scene_description) && (
+                  <div
+                    style={{
+                      color: "var(--color-text-muted)",
+                      fontSize: "var(--font-size-xs)",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {isEn ? ep.scene_description_en : ep.scene_description}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 地図 */}
+        <div
+          style={{
+            height: "220px",
+            borderRadius: "var(--radius-md)",
+            overflow: "hidden",
+            marginBottom: "var(--space-md)",
+            border: "0.5px solid var(--color-border)",
+          }}
+        >
+          <Map
+            mapboxAccessToken={MAPBOX_TOKEN}
+            initialViewState={{
+              longitude: spot.lng,
+              latitude: spot.lat,
+              zoom: 14,
+            }}
+            style={{ width: "100%", height: "100%" }}
+            mapStyle="mapbox://styles/mapbox/streets-v12"
+          >
+            <Marker longitude={spot.lng} latitude={spot.lat} anchor="bottom">
+              <div style={{ fontSize: "26px" }}>{isSacred ? "📍" : "🗺️"}</div>
+            </Marker>
+          </Map>
+        </div>
+
+        {/* 地図で見るボタン */}
+        <button
+          onClick={() => navigate(`/?spot=${spot.id}`)}
+          style={{
+            width: "100%",
+            padding: "10px",
+            marginBottom: "var(--space-md)",
+            background: "var(--color-card)",
+            border: "0.5px solid var(--color-border)",
+            borderRadius: "var(--radius-sm)",
+            cursor: "pointer",
+            fontSize: "var(--font-size-sm)",
+            color: "var(--color-text-sub)",
+          }}
+        >
+          🗺️ {isEn ? "View on full map" : "地図で見る"}
+        </button>
+
+        {/* チェックインボタン */}
+        {user ? (
+          checkedIn ? (
+            <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+              <button
+                onClick={handleToggleFavorite}
+                style={{
+                  padding: "10px 14px",
+                  cursor: "pointer",
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                  fontSize: "var(--font-size-sm)",
+                  background: isFavorite ? "#F5C842" : "var(--color-bg)",
+                  color: isFavorite
+                    ? "var(--color-white)"
+                    : "var(--color-text-sub)",
+                }}
+              >
+                {isFavorite
+                  ? `⭐ ${isEn ? "Favorited" : "お気に入り"}`
+                  : `☆ ${isEn ? "Favorite" : "お気に入り"}`}
+              </button>
+              <button
+                onClick={handleUnCheckin}
+                disabled={checkingIn}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  cursor: "pointer",
+                  background: "var(--color-error-light)",
+                  color: "var(--color-error)",
+                  border: "0.5px solid var(--color-error)",
+                  borderRadius: "var(--radius-sm)",
+                  fontSize: "var(--font-size-sm)",
+                }}
+              >
+                {checkingIn ? t("map.processing") : `✅ ${t("map.uncheckin")}`}
+              </button>
+            </div>
+          ) : (
             <button
-              onClick={handleUnCheckin}
+              onClick={handleCheckin}
               disabled={checkingIn}
               style={{
-                flex: 1,
+                width: "100%",
                 padding: "10px",
                 cursor: "pointer",
-                background: "#f44336",
-                color: "white",
+                background: "var(--color-primary)",
+                color: "var(--color-white)",
                 border: "none",
-                borderRadius: "8px",
-                fontSize: "14px",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "var(--font-size-md)",
+                fontWeight: "500",
               }}
             >
-              {checkingIn ? t("map.processing") : `✅ ${t("map.uncheckin")}`}
+              {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
             </button>
-          </div>
+          )
         ) : (
-          <button
-            onClick={handleCheckin}
-            disabled={checkingIn}
+          <p
             style={{
-              width: "100%",
-              padding: "10px",
-              cursor: "pointer",
-              background: "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "14px",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-muted)",
+              textAlign: "center",
             }}
           >
-            {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
-          </button>
-        )
-      ) : (
-        <p style={{ fontSize: "13px", color: "#999", textAlign: "center" }}>
-          {t("map.loginRequired")}
-        </p>
-      )}
+            {t("map.loginRequired")}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
