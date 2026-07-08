@@ -31,18 +31,14 @@ export default function RouteResultPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    // location.stateがあれば再取得不要
     if (initialState || !id) return;
-
     const fetchRoute = async () => {
       setLoading(true);
-
       const { data: route, error: routeError } = await supabase
         .from("routes")
         .select("*")
         .eq("id", id)
         .single();
-
       if (routeError || !route) {
         setNotFound(true);
         setLoading(false);
@@ -80,23 +76,66 @@ export default function RouteResultPage() {
       });
       setLoading(false);
     };
-
     fetchRoute();
   }, [id, initialState]);
 
   if (loading) {
     return (
-      <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p>読み込み中...</p>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--color-bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ color: "var(--color-text-muted)" }}>読み込み中...</p>
       </div>
     );
   }
 
   if (notFound || !routeData) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <p>{t("result.noData")}</p>
-        <button onClick={() => navigate("/")}>{t("result.backToMap")}</button>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--color-bg)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            background: "var(--color-card)",
+            borderRadius: "var(--radius-lg)",
+            padding: "var(--space-xl)",
+            textAlign: "center",
+            borderTop: "2px solid var(--color-primary)",
+          }}
+        >
+          <p
+            style={{
+              color: "var(--color-text-sub)",
+              marginBottom: "var(--space-md)",
+            }}
+          >
+            {t("result.noData")}
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              color: "var(--color-primary)",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+            }}
+          >
+            {t("result.backToMap")}
+          </button>
+        </div>
       </div>
     );
   }
@@ -106,132 +145,207 @@ export default function RouteResultPage() {
   const isOverTime = totalMin > availableMinutes;
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "480px", margin: "0 auto" }}>
-      <h1 style={{ fontSize: "20px", marginBottom: "0.5rem" }}>
-        {t("result.title")}
-      </h1>
-
+    <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
       <div
         style={{
-          padding: "12px",
-          marginBottom: "1.5rem",
-          background: isOverTime ? "#FFF3E0" : "#E8F5E9",
-          borderRadius: "8px",
-          fontSize: "14px",
+          maxWidth: "480px",
+          margin: "0 auto",
+          padding: "var(--space-xl) var(--space-lg)",
         }}
       >
-        <p style={{ margin: "0 0 4px" }}>{t(`route.${transportMode}`)}</p>
-        <p style={{ margin: "0 0 4px" }}>
-          {t("result.totalTime")}：
-          <strong>
-            {Math.floor(totalMin / 60)}
-            {t("route.hours")}
-            {totalMin % 60}
-            {t("route.minutes")}
-          </strong>
-          {isOverTime && (
-            <span style={{ color: "#f44336", marginLeft: "8px" }}>
-              ⚠️ {t("result.overTime")}（{Math.floor(availableMinutes / 60)}
-              {t("route.hours")}）
-            </span>
-          )}
-        </p>
-      </div>
-
-      {spots.map((spot, i) => (
-        <div key={spot.id}>
-          {i > 0 && (
-            <div
-              style={{
-                padding: "4px 0 4px 24px",
-                fontSize: "12px",
-                color: "#999",
-              }}
-            >
-              {t(`route.${transportMode}`)} {t("result.travelTime")}
-              {travelTimes[`${spots[i - 1].id}_${spot.id}`] ?? "?"}
-              {t("route.minutes")}
-            </div>
-          )}
-          <div
+        {/* タイトル */}
+        <div
+          style={{
+            borderLeft: "3px solid var(--color-primary)",
+            paddingLeft: "var(--space-md)",
+            marginBottom: "var(--space-xl)",
+          }}
+        >
+          <h1
             style={{
-              padding: "12px",
-              marginBottom: "4px",
-              background: "white",
-              borderRadius: "8px",
-              border: "1px solid #eee",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+              margin: "0 0 2px",
+              fontSize: "var(--font-size-xl)",
+              fontWeight: "500",
+              color: "var(--color-text-main)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            {t("result.title")}
+          </h1>
+        </div>
+
+        {/* サマリー */}
+        <div
+          style={{
+            background: "var(--color-card)",
+            borderRadius: "var(--radius-md)",
+            borderLeft: `3px solid ${isOverTime ? "var(--color-warning)" : "var(--color-success)"}`,
+            padding: "var(--space-md) var(--space-lg)",
+            marginBottom: "var(--space-xl)",
+            boxShadow: "var(--shadow-sm)",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 var(--space-xs)",
+              fontSize: "var(--font-size-xs)",
+              color: "var(--color-text-muted)",
+            }}
+          >
+            {t(`route.${transportMode}`)}
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--font-size-md)",
+              color: "var(--color-text-main)",
+            }}
+          >
+            {t("result.totalTime")}：
+            <strong
+              style={{
+                color: isOverTime
+                  ? "var(--color-warning)"
+                  : "var(--color-success)",
+                fontSize: "var(--font-size-lg)",
+              }}
+            >
+              {Math.floor(totalMin / 60)}
+              {t("route.hours")}
+              {totalMin % 60}
+              {t("route.minutes")}
+            </strong>
+            {isOverTime && (
               <span
                 style={{
-                  width: "24px",
-                  height: "24px",
-                  background: "#2196F3",
-                  color: "white",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  flexShrink: 0,
+                  color: "var(--color-warning)",
+                  fontSize: "var(--font-size-xs)",
+                  marginLeft: "var(--space-sm)",
                 }}
               >
-                {i + 1}
+                ⚠️ {t("result.overTime")}
               </span>
-              <div style={{ flex: 1 }}>
-                <p
+            )}
+          </p>
+        </div>
+
+        {/* スポット一覧 */}
+        {spots.map((spot, i) => (
+          <div key={spot.id}>
+            {i > 0 && (
+              <div
+                style={{
+                  padding: "var(--space-xs) 0 var(--space-xs) 28px",
+                  fontSize: "var(--font-size-xs)",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {t(`route.${transportMode}`)} {t("result.travelTime")}
+                {travelTimes[`${spots[i - 1].id}_${spot.id}`] ?? "?"}
+                {t("route.minutes")}
+              </div>
+            )}
+            <div
+              style={{
+                background: "var(--color-card)",
+                borderRadius: "var(--radius-md)",
+                borderLeft: "3px solid var(--color-primary)",
+                padding: "var(--space-md) var(--space-lg)",
+                marginBottom: "var(--space-xs)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-md)",
+                }}
+              >
+                <span
                   style={{
-                    margin: "0 0 2px",
+                    width: "24px",
+                    height: "24px",
+                    background: "var(--color-primary)",
+                    color: "var(--color-white)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "var(--font-size-xs)",
                     fontWeight: "bold",
-                    fontSize: "15px",
+                    flexShrink: 0,
                   }}
                 >
-                  {spot.name}
-                </p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#999" }}>
-                  {t("result.stayTime")}
-                  {spot.duration_min ?? 30}
-                  {t("route.minutes")}
-                </p>
+                  {i + 1}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <p
+                    style={{
+                      margin: "0 0 2px",
+                      fontWeight: "500",
+                      fontSize: "var(--font-size-md)",
+                      color: "var(--color-text-main)",
+                    }}
+                  >
+                    {spot.name}
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "var(--font-size-xs)",
+                      color: "var(--color-text-muted)",
+                    }}
+                  >
+                    ⏱ {t("result.stayTime")}
+                    {spot.duration_min ?? 30}
+                    {t("route.minutes")}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      <div style={{ marginTop: "1.5rem", display: "flex", gap: "8px" }}>
-        <button
-          onClick={() => {
-            navigate(`/?restoreRoute=${id}`);
-          }}
+        {/* ボタン */}
+        <div
           style={{
-            flex: 1,
-            padding: "10px",
-            background: "white",
-            border: "1px solid #ddd",
-            borderRadius: "8px",
-            cursor: "pointer",
+            marginTop: "var(--space-xl)",
+            display: "flex",
+            gap: "var(--space-sm)",
           }}
         >
-          {t("result.changeCondition")}
-        </button>
-        <button
-          onClick={() => navigate("/")}
-          style={{
-            flex: 1,
-            padding: "10px",
-            background: "#2196F3",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          {t("result.backToMap")}
-        </button>
+          <button
+            onClick={() => navigate(`/?restoreRoute=${id}`)}
+            style={{
+              flex: 1,
+              padding: "10px",
+              background: "var(--color-card)",
+              border: "0.5px solid var(--color-border)",
+              borderRadius: "var(--radius-sm)",
+              cursor: "pointer",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-sub)",
+            }}
+          >
+            {t("result.changeCondition")}
+          </button>
+          <button
+            onClick={() => navigate("/")}
+            style={{
+              flex: 1,
+              padding: "10px",
+              background: "var(--color-primary)",
+              color: "var(--color-white)",
+              border: "none",
+              borderRadius: "var(--radius-sm)",
+              cursor: "pointer",
+              fontSize: "var(--font-size-sm)",
+              fontWeight: "500",
+            }}
+          >
+            {t("result.backToMap")}
+          </button>
+        </div>
       </div>
     </div>
   );
