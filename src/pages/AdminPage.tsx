@@ -466,12 +466,13 @@ export default function AdminPage() {
   const handleFetchFormResponses = async () => {
     setLoadingForms(true);
     setFormError(null);
-
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
-
     const { data, error } = await supabase.functions.invoke(
       "fetch-form-responses",
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      },
     );
 
     if (error) {

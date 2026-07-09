@@ -613,7 +613,7 @@ export default function MapPage() {
     } else {
       const prevLeg = transitLegs[legIndex - 1];
       const stayMin = getDurationForSpot(fromSpot);
-      const departSecs = prevLeg.arrivalSecs + stayMin * 60;
+      const departSecs = (prevLeg?.arrivalSecs ?? 0) + stayMin * 60;
       time = secsToTimeStr(departSecs);
       date = parseDateTimeInput(departureDateTime).date; // 簡易的に同日扱い（日付超えは別途対応）
     }
@@ -664,7 +664,7 @@ export default function MapPage() {
 
     // 合計時間を再計算
     const totalTravelMin = newLegs.reduce(
-      (sum, l) => sum + l.durationSecs / 60,
+      (sum, l) => sum + (l?.durationSecs ?? 0) / 60,
       0,
     );
     const totalStayMin = routeResult.orderedSpots.reduce(

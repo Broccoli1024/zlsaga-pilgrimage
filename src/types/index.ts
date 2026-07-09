@@ -1,4 +1,4 @@
-export type TransportMode = "car" | "walk";
+export type TransportMode = "car" | "walk" | "transit";
 export type Lang = "ja" | "en";
 
 export interface Spot {
