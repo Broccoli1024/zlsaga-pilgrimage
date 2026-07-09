@@ -883,6 +883,7 @@ export default function MapPage() {
     <div className="full-bleed" style={{ width: "100vw", height: "100vh" }}>
       {/* ヘッダー */}
       <div
+        className="map-header"
         style={{
           position: "absolute",
           top: 10,
@@ -911,6 +912,7 @@ export default function MapPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Link
               to="/mypage"
+              className="map-header-user-email"
               style={{
                 textDecoration: "none",
                 color: "var(--color-text-main)",
@@ -923,6 +925,7 @@ export default function MapPage() {
               onClick={async () => {
                 await supabase.auth.signOut();
               }}
+              className="map-header-logout-btn"
               style={{
                 padding: "3px 8px",
                 fontSize: "var(--font-size-xs)",
@@ -969,6 +972,7 @@ export default function MapPage() {
       {/* ルート作成パネル */}
       {user && (
         <div
+          className={`map-route-panel${isPanelOpen ? " panel-open-mobile" : ""}`}
           style={{
             position: "absolute",
             top: 56,

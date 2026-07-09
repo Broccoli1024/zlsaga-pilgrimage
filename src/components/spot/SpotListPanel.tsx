@@ -102,6 +102,7 @@ export default function SpotListPanel({
     <>
       {/* 開閉ボタン */}
       <button
+        className={`spot-list-toggle-btn${isOpen ? " is-open" : ""}`}
         onClick={() => {
           const next = !isOpen;
           setIsOpen(next);
@@ -144,6 +145,7 @@ export default function SpotListPanel({
       {/* サイドパネル */}
       {isOpen && (
         <div
+          className="spot-list-panel"
           style={{
             position: "absolute",
             top: 0,
