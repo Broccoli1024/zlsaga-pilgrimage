@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
+import type { MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
@@ -76,6 +77,7 @@ export default function MapPage() {
   );
   const [checkingIn, setCheckingIn] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const mapRef = useRef<MapRef | null>(null);
   const [filters, setFilters] = useState<SpotFilters>({
     sacredFilter: "all",
     areaFilter: "all",
@@ -869,8 +871,16 @@ export default function MapPage() {
     ? routeResult.totalMin > availableMinutes
     : false;
 
+  // パネルの開閉でレイアウトが変わった際、Mapboxのcanvasサイズを再計算させる
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapRef.current?.resize();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [isPanelOpen]);
+
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div className="full-bleed" style={{ width: "100vw", height: "100vh" }}>
       {/* ヘッダー */}
       <div
         style={{
@@ -1688,6 +1698,7 @@ export default function MapPage() {
       )}
 
       <Map
+        ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
         initialViewState={{ longitude: 130.2988, latitude: 33.2494, zoom: 9 }}
         style={{ width: "100%", height: "100%" }}
