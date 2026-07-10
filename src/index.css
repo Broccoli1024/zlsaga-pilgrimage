@@ -62,12 +62,6 @@
   box-sizing: border-box;
 }
 
-/* MapPageなど全画面表示させたいページ用に #root の幅制限を解除 */
-#root:has(.full-bleed) {
-  width: 100%;
-  border-inline: none;
-}
-
 body {
   margin: 0;
 }
@@ -116,64 +110,11 @@ code {
   background: var(--code-bg);
 }
 
-/* ===== MapPage レスポンシブ対応 ===== */
-
-/* ユーザー情報エリア：スマホでは省略・折り返し可能にする */
-.map-header {
-  max-width: calc(100vw - 20px);
-}
-
-.map-header-user-email {
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-  .map-header {
-    top: 6px !important;
-    right: 6px !important;
-    padding: 6px 10px !important;
-    gap: 6px !important;
-    font-size: 12px !important;
-  }
-
-  .map-header-user-email {
-    max-width: 90px;
-  }
-
-  .map-header-logout-btn {
-    padding: 2px 6px !important;
-    font-size: 11px !important;
-  }
-
-  .map-route-panel {
-    top: 48px !important;
-  }
-
-  .map-panel-toggle-btn {
-    padding: 6px 10px !important;
-    font-size: 13px !important;
-  }
-
-  /* サイドパネル：スマホでは画面幅いっぱいのオーバーレイに */
-  .spot-list-panel {
-    width: 100vw !important;
-  }
-
-  /* パネル開閉ボタン：パネル展開中は右上に固定し、パネルより手前に表示 */
-  .spot-list-toggle-btn.is-open {
-    left: auto !important;
-    right: 10px !important;
-    top: 10px !important;
-    z-index: 4 !important;
-  }
-
-  /* パネル展開中はルート作成パネルを隠す（全画面パネルの裏に隠れて操作不能になるため） */
-  .map-route-panel.panel-open-mobile {
-    display: none !important;
-  }
-}
-
 @import "tailwindcss";
+
+/* ===== ナビゲーションメニュー ボタン位置 ===== */
+/* StaticPageLayout（max-width: 640px, 中央寄せ）の右端に揃える。
+   画面が狭い場合は画面右端から10pxの位置まで寄る。 */
+.nav-menu-btn {
+  right: max(10px, calc((100vw - 640px) / 2 + 10px));
+}
