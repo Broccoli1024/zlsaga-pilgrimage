@@ -69,6 +69,13 @@ export default function MapPage() {
   const { t } = useTranslation();
   const user = useAuthStore((state) => state.user);
 
+  useEffect(() => {
+    document.body.classList.add("map-page-active");
+    return () => {
+      document.body.classList.remove("map-page-active");
+    };
+  }, []);
+
   const [spots, setSpots] = useState<Spot[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -900,7 +907,18 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+      }}
+    >
       {/* ヘッダー */}
       <div
         style={{

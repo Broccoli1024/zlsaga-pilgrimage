@@ -62,6 +62,15 @@
   box-sizing: border-box;
 }
 
+/* MapPage表示中は#rootの幅制限・中央寄せ・左右ボーダーを解除し、
+   画面全体を使えるようにする */
+body.map-page-active #root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-inline: none;
+}
+
 body {
   margin: 0;
 }
@@ -114,7 +123,8 @@ code {
 
 /* ===== ナビゲーションメニュー ボタン位置 ===== */
 /* StaticPageLayout（max-width: 640px, 中央寄せ）の右端に揃える。
+   position:absoluteなので、基準は親要素(#root内の実際の幅)の100%。
    画面が狭い場合は画面右端から10pxの位置まで寄る。 */
 .nav-menu-btn {
-  right: max(10px, calc((100vw - 640px) / 2 + 10px));
+  right: max(10px, calc((100% - 640px) / 2 + 10px));
 }
