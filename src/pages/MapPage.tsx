@@ -884,6 +884,21 @@ export default function MapPage() {
     return () => clearTimeout(timer);
   }, [isPanelOpen]);
 
+  // 初回マウント時とウィンドウサイズ変更時にもcanvasサイズを再計算させる
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapRef.current?.resize();
+    }, 100);
+    const handleWindowResize = () => {
+      mapRef.current?.resize();
+    };
+    window.addEventListener("resize", handleWindowResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, []);
+
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       {/* ヘッダー */}
@@ -920,9 +935,42 @@ export default function MapPage() {
                 textDecoration: "none",
                 color: "var(--color-text-main)",
                 fontSize: "var(--font-size-sm)",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
               }}
             >
-              👤 {user.email}
+              {(() => {
+                const avatarUrl = user.user_metadata?.avatar_url as
+                  | string
+                  | undefined;
+                const displayName = user.user_metadata?.display_name as
+                  | string
+                  | undefined;
+                return (
+                  <>
+                    <span
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        background: avatarUrl
+                          ? `center / cover no-repeat url(${avatarUrl})`
+                          : "var(--color-bg)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "12px",
+                        flexShrink: 0,
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      {!avatarUrl && "👤"}
+                    </span>
+                    {displayName || user.email}
+                  </>
+                );
+              })()}
             </Link>
             <button
               onClick={async () => {

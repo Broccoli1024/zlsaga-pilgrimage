@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import Map, { Marker } from "react-map-gl/mapbox";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
+import ProfileEditor from "../components/mypage/ProfileEditor";
 import type { Spot, Route } from "../types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -235,23 +236,14 @@ export default function MyPage() {
         >
           <p
             style={{
-              margin: "0 0 2px",
+              margin: "0 0 var(--space-sm)",
               fontSize: "var(--font-size-xs)",
               color: "var(--color-text-muted)",
             }}
           >
             マイページ
           </p>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "var(--font-size-lg)",
-              fontWeight: "500",
-              color: "var(--color-text-main)",
-            }}
-          >
-            {user.email}
-          </h1>
+          <ProfileEditor user={user} />
         </div>
 
         {/* 進捗サマリー */}

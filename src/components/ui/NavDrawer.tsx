@@ -14,7 +14,11 @@ const MENU_ITEMS: MenuItem[] = [
     label: "スポットを提案する",
     href: "https://docs.google.com/forms/d/e/1FAIpQLSfpAy3zvl3G6IdRTD6mhA4g1nZ49NKV4LxDJfE8jbk91e85nA/viewform",
   },
-  { icon: "🐞", label: "不具合・ご意見", href: "#" },
+  {
+    icon: "🐞",
+    label: "不具合・ご意見",
+    href: "https://docs.google.com/forms/d/16xCEsny8eq4bh5kJH-HwE540jxCvBPfu9DyPXk5uVCI/viewform",
+  },
   { icon: "❓", label: "よくある質問", to: "/faq" },
   { icon: "🔒", label: "プライバシーポリシー", to: "/privacy" },
   { icon: "📜", label: "利用規約", to: "/terms" },

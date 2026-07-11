@@ -29,7 +29,7 @@ export default function NavMenuButton({
         alignItems: "center",
         justifyContent: "center",
         color: "var(--color-text-main)",
-        zIndex: 8,
+        zIndex: 3,
         ...style,
       }}
     >

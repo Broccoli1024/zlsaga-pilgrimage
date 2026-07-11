@@ -7,6 +7,10 @@ interface AuthStore {
   loading: boolean;
   setUser: (user: User | null) => void;
   signOut: () => Promise<void>;
+  updateProfile: (params: {
+    displayName?: string;
+    avatarUrl?: string;
+  }) => Promise<{ error: string | null }>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -16,5 +20,24 @@ export const useAuthStore = create<AuthStore>((set) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ user: null });
+  },
+  updateProfile: async ({ displayName, avatarUrl }) => {
+    const data: Record<string, string> = {};
+    if (displayName !== undefined) data.display_name = displayName;
+    if (avatarUrl !== undefined) data.avatar_url = avatarUrl;
+
+    const { data: updated, error } = await supabase.auth.updateUser({
+      data,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    if (updated.user) {
+      set({ user: updated.user });
+    }
+
+    return { error: null };
   },
 }));
