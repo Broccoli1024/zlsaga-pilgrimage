@@ -943,6 +943,7 @@ export default function MapPage() {
           alignItems: "center",
           gap: "10px",
           borderTop: "2px solid var(--color-primary)",
+          maxWidth: "calc(100vw - 20px)",
         }}
       >
         <LangToggle />
@@ -954,7 +955,14 @@ export default function MapPage() {
           }}
         />
         {user ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              minWidth: 0,
+            }}
+          >
             <Link
               to="/mypage"
               style={{
@@ -964,6 +972,7 @@ export default function MapPage() {
                 display: "flex",
                 alignItems: "center",
                 gap: "6px",
+                minWidth: 0,
               }}
             >
               {(() => {
@@ -993,7 +1002,16 @@ export default function MapPage() {
                     >
                       {!avatarUrl && "👤"}
                     </span>
-                    {displayName || user.email}
+                    <span
+                      style={{
+                        maxWidth: "min(140px, 30vw)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {displayName || user.email}
+                    </span>
                   </>
                 );
               })()}
