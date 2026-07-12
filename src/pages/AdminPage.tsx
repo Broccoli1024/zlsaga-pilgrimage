@@ -321,28 +321,33 @@ export default function AdminPage() {
     setManageSpots(data.spots);
     setManageSpotTags(data.spotTags);
 
-    const { data: spotChars } = await supabase
+    const { data: spotChars, error: spotCharsError } = await supabase
       .from("spot_characters")
       .select("spot_id, character_id");
+    if (spotCharsError)
+      console.error("spot_characters取得エラー:", spotCharsError);
     setManageSpotCharacters(spotChars ?? []);
 
-    const { data: charsData } = await supabase
+    const { data: charsData, error: charsError } = await supabase
       .from("characters")
       .select("id, name, name_en")
       .order("sort_order");
+    if (charsError) console.error("characters取得エラー:", charsError);
     setManageCharacters(charsData ?? []);
 
-    const { data: spotEps } = await supabase
+    const { data: spotEps, error: spotEpsError } = await supabase
       .from("spot_episodes")
       .select("spot_id, episode_id");
+    if (spotEpsError) console.error("spot_episodes取得エラー:", spotEpsError);
     setManageSpotEpisodes(spotEps ?? []);
 
-    const { data: episodesData } = await supabase
+    const { data: episodesData, error: episodesError } = await supabase
       .from("episodes")
       .select("id, media_type, season, episode_number, title")
       .order("media_type")
       .order("season")
       .order("episode_number");
+    if (episodesError) console.error("episodes取得エラー:", episodesError);
     setManageEpisodes(episodesData ?? []);
 
     setLoadingManage(false);
@@ -409,6 +414,11 @@ export default function AdminPage() {
 
   const saveEdit = async () => {
     if (!editingSpotId) return;
+    console.log("saveEdit実行時の値:", {
+      editingSpotId,
+      editCharacterIds,
+      editEpisodeIds,
+    });
     const { data, error } = await supabase.functions.invoke("manage-spot", {
       body: {
         action: "update",
@@ -428,35 +438,13 @@ export default function AdminPage() {
           is_published: !!editForm.is_published,
         },
         tagIds: editTagIds,
+        characterIds: editCharacterIds,
+        episodeIds: editEpisodeIds,
       },
     });
     if (error || data?.error) {
       alert(`更新に失敗しました: ${error?.message || data?.error}`);
       return;
-    }
-
-    // キャラクターの更新（一旦全削除して再登録）
-    await supabase
-      .from("spot_characters")
-      .delete()
-      .eq("spot_id", editingSpotId);
-    if (editCharacterIds.length > 0) {
-      await supabase.from("spot_characters").insert(
-        editCharacterIds.map((characterId) => ({
-          spot_id: editingSpotId,
-          character_id: characterId,
-        })),
-      );
-    }
-    // エピソードの更新（一旦全削除して再登録）
-    await supabase.from("spot_episodes").delete().eq("spot_id", editingSpotId);
-    if (editEpisodeIds.length > 0) {
-      await supabase.from("spot_episodes").insert(
-        editEpisodeIds.map((episodeId) => ({
-          spot_id: editingSpotId,
-          episode_id: episodeId,
-        })),
-      );
     }
 
     await handleLoadManageSpots();
@@ -487,7 +475,7 @@ export default function AdminPage() {
       return;
     }
 
-    const { loadedCategories, loadedTags } = await loadMasters();
+    const { loadedAreas, loadedCategories, loadedTags } = await loadMasters();
 
     // エピソードマスタも取得
     const { data: episodesData } = await supabase
@@ -599,9 +587,10 @@ export default function AdminPage() {
           }
         });
 
-        // エリアのバリデーション（エリアはareasマスタとの一致確認のみ、フォールバックなし）
-        // ※ areasは別途masters取得が必要なため、ここではareaFilterの存在確認のみ実施想定
-        // （loadMastersで取得したareasはAdminPage側のstateにあるためチェック対象外にする場合あり）
+        // エリアのバリデーション（areasマスタとの一致確認）
+        if (areaName && !loadedAreas.some((a) => a.name === areaName)) {
+          errors.push(`エリア「${areaName}」が見つかりません`);
+        }
 
         const episodeIds = isSacred ? parseEpisodeText(episodeTextRaw) : [];
         console.log("durationText:", durationText, "record全体:", record);
@@ -857,6 +846,10 @@ export default function AdminPage() {
                         EN: {row.name_en}
                       </div>
                     )}
+                    <div style={{ color: "#333", marginTop: "2px" }}>
+                      📍 {row.area_name || "（エリア未設定）"}
+                      {row.category_name && ` ・ ${row.category_name}`}
+                    </div>
                     <div style={{ color: "#666", marginTop: "2px" }}>
                       {row.description?.slice(0, 60)}...
                     </div>
