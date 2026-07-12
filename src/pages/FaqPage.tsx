@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import StaticPageLayout from "../components/layout/StaticPageLayout";
 
 interface FaqPageProps {
@@ -5,9 +6,10 @@ interface FaqPageProps {
 }
 
 export default function FaqPage({ onMenuOpen }: FaqPageProps) {
+  const { t } = useTranslation();
   return (
-    <StaticPageLayout title="❓ よくある質問" onMenuOpen={onMenuOpen}>
-      <p>準備中です。近日中に内容を掲載します。</p>
+    <StaticPageLayout title={t("faq.title")} onMenuOpen={onMenuOpen}>
+      <p>{t("faq.comingSoon")}</p>
     </StaticPageLayout>
   );
 }

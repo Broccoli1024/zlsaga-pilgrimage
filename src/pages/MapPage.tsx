@@ -66,7 +66,8 @@ interface TransitOption {
 }
 
 export default function MapPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language.startsWith("en");
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
@@ -168,7 +169,14 @@ export default function MapPage() {
         supabase.from("spot_significance_tags").select("spot_id, tag_id"),
       ]);
       if (spotsRes.data) setSpots(spotsRes.data);
-      if (areasRes.data) setAreas(areasRes.data);
+      if (areasRes.data) {
+        const sortedAreas = [...areasRes.data].sort((a, b) => {
+          if (a.name === "その他") return 1;
+          if (b.name === "その他") return -1;
+          return a.name.localeCompare(b.name, "ja");
+        });
+        setAreas(sortedAreas);
+      }
       if (categoriesRes.data) setCategories(categoriesRes.data);
       if (charactersRes.data) setCharacters(charactersRes.data);
       if (spotCharsRes.data) setSpotCharacters(spotCharsRes.data);
@@ -607,7 +615,7 @@ export default function MapPage() {
 
   // スポット名から「A→B→C」形式のデフォルトルート名を生成
   const generateDefaultRouteName = (spots: Spot[]): string => {
-    return spots.map((s) => s.name).join("→");
+    return spots.map((s) => (isEn ? (s.name_en ?? s.name) : s.name)).join("→");
   };
 
   // 指定した区間の候補を3つ取得し、選択UIを表示する
@@ -969,8 +977,8 @@ export default function MapPage() {
                   <>
                     <span
                       style={{
-                        width: "20px",
-                        height: "20px",
+                        width: "40px",
+                        height: "40px",
                         borderRadius: "50%",
                         background: avatarUrl
                           ? `center / cover no-repeat url(${avatarUrl})`
@@ -1004,7 +1012,7 @@ export default function MapPage() {
                 cursor: "pointer",
               }}
             >
-              ログアウト
+              {t("map.logout")}
             </button>
           </div>
         ) : (
@@ -1167,7 +1175,7 @@ export default function MapPage() {
                         <span
                           style={{ flex: 1, color: "var(--color-text-main)" }}
                         >
-                          {spot.name}
+                          {isEn ? (spot.name_en ?? spot.name) : spot.name}
                         </span>
                         <input
                           type="number"
@@ -1206,7 +1214,7 @@ export default function MapPage() {
                             color: "var(--color-text-muted)",
                           }}
                         >
-                          分
+                          {t("route.minutes")}
                         </span>
                         <span
                           onClick={() => handleMarkerClickForRoute(spot)}
@@ -1232,7 +1240,7 @@ export default function MapPage() {
                           color: "var(--color-text-sub)",
                         }}
                       >
-                        巡礼順
+                        {t("route.orderLabel")}
                       </p>
                       <div
                         style={{
@@ -1243,8 +1251,8 @@ export default function MapPage() {
                       >
                         {(
                           [
-                            ["auto", "🤖 自動最適化"],
-                            ["manual", "✋ 選んだ順"],
+                            ["auto", t("route.orderAuto")],
+                            ["manual", t("route.orderManual")],
                           ] as [typeof orderMode, string][]
                         ).map(([mode, label]) => (
                           <button
@@ -1342,7 +1350,7 @@ export default function MapPage() {
                             checked={useTolls}
                             onChange={(e) => setUseTolls(e.target.checked)}
                           />
-                          有料道路を使う
+                          {t("route.useTolls")}
                         </label>
                       )}
 
@@ -1356,7 +1364,7 @@ export default function MapPage() {
                               color: "var(--color-text-sub)",
                             }}
                           >
-                            出発日時
+                            {t("route.departureTime")}
                           </p>
                           <input
                             type="datetime-local"
@@ -1515,7 +1523,7 @@ export default function MapPage() {
                         : "var(--color-success)",
                     }}
                   >
-                    {t(`route.${transportMode}`)} ・ 合計{" "}
+                    {t(`route.${transportMode}`)} ・ {t("route.total")}{" "}
                     <strong>
                       {Math.floor(routeResult.totalMin / 60)}
                       {t("route.hours")}
@@ -1719,7 +1727,7 @@ export default function MapPage() {
                               fontWeight: "500",
                             }}
                           >
-                            {spot.name}
+                            {isEn ? (spot.name_en ?? spot.name) : spot.name}
                           </span>
                           <span
                             style={{
@@ -1727,7 +1735,8 @@ export default function MapPage() {
                               color: "var(--color-text-muted)",
                             }}
                           >
-                            ⏱ {getDurationForSpot(spot)}分
+                            ⏱ {getDurationForSpot(spot)}
+                            {t("route.minutes")}
                           </span>
                         </div>
                       </div>
@@ -1750,14 +1759,14 @@ export default function MapPage() {
                           color: "var(--color-text-sub)",
                         }}
                       >
-                        このルートを保存
+                        {t("route.saveRoute")}
                       </p>
                       <div style={{ display: "flex", gap: "6px" }}>
                         <input
                           type="text"
                           value={routeNameInput}
                           onChange={(e) => setRouteNameInput(e.target.value)}
-                          placeholder="ルート名を入力"
+                          placeholder={t("route.routeNamePlaceholder")}
                           style={{
                             flex: 1,
                             padding: "6px",
@@ -1785,7 +1794,7 @@ export default function MapPage() {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          💾 保存
+                          💾 {t("route.save")}
                         </button>
                       </div>
                     </div>
@@ -1910,13 +1919,16 @@ export default function MapPage() {
           >
             <SpotDetailPopup
               spot={selectedSpot}
-              areaName={
-                areas.find((a) => a.id === selectedSpot.area_id)?.name ?? ""
-              }
-              categoryName={
-                categories.find((c) => c.id === selectedSpot.category_id)
-                  ?.name ?? ""
-              }
+              areaName={(() => {
+                const a = areas.find((a) => a.id === selectedSpot.area_id);
+                return (isEn ? (a?.name_en ?? a?.name) : a?.name) ?? "";
+              })()}
+              categoryName={(() => {
+                const c = categories.find(
+                  (c) => c.id === selectedSpot.category_id,
+                );
+                return (isEn ? (c?.name_en ?? c?.name) : c?.name) ?? "";
+              })()}
               isSacred={isSpotSacred(selectedSpot)}
               tags={significanceTags.filter((t) =>
                 spotTags.some(

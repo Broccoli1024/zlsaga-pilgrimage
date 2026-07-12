@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 
 interface NavMenuButtonProps {
   onClick: () => void;
@@ -11,10 +12,11 @@ export default function NavMenuButton({
   style,
   className,
 }: NavMenuButtonProps) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onClick}
-      aria-label="メニューを開く"
+      aria-label={t("nav.open")}
       className={className}
       style={{
         width: "40px",

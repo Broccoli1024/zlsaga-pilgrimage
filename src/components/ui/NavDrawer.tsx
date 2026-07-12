@@ -1,28 +1,29 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface MenuItem {
   icon: string;
-  label: string;
+  labelKey: string;
   to?: string;
   href?: string;
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { icon: "📖", label: "このアプリについて", to: "/about" },
+  { icon: "📖", labelKey: "nav.about", to: "/about" },
   {
     icon: "🗺",
-    label: "スポットを提案する",
+    labelKey: "nav.suggestSpot",
     href: "https://docs.google.com/forms/d/e/1FAIpQLSfpAy3zvl3G6IdRTD6mhA4g1nZ49NKV4LxDJfE8jbk91e85nA/viewform",
   },
   {
     icon: "🐞",
-    label: "不具合・ご意見",
+    labelKey: "nav.feedback",
     href: "https://docs.google.com/forms/d/16xCEsny8eq4bh5kJH-HwE540jxCvBPfu9DyPXk5uVCI/viewform",
   },
-  { icon: "❓", label: "よくある質問", to: "/faq" },
-  { icon: "🔒", label: "プライバシーポリシー", to: "/privacy" },
-  { icon: "📜", label: "利用規約", to: "/terms" },
-  { icon: "ℹ️", label: "ライセンス", to: "/license" },
+  { icon: "❓", labelKey: "nav.faq", to: "/faq" },
+  { icon: "🔒", labelKey: "nav.privacy", to: "/privacy" },
+  { icon: "📜", labelKey: "nav.terms", to: "/terms" },
+  { icon: "ℹ️", labelKey: "nav.license", to: "/license" },
 ];
 
 interface NavDrawerProps {
@@ -35,6 +36,7 @@ interface NavDrawerProps {
  * 開閉ボタンは呼び出し側で用意し、isOpen/onCloseで制御する。
  */
 export default function NavDrawer({ isOpen, onClose }: NavDrawerProps) {
+  const { t } = useTranslation();
   return (
     <>
       {/* 背景オーバーレイ */}
@@ -91,11 +93,11 @@ export default function NavDrawer({ isOpen, onClose }: NavDrawerProps) {
               gap: "6px",
             }}
           >
-            ≡ その他
+            {t("nav.other")}
           </p>
           <button
             onClick={onClose}
-            aria-label="メニューを閉じる"
+            aria-label={t("nav.close")}
             style={{
               border: "none",
               background: "transparent",
@@ -115,7 +117,7 @@ export default function NavDrawer({ isOpen, onClose }: NavDrawerProps) {
           {MENU_ITEMS.map((item) =>
             item.to ? (
               <Link
-                key={item.label}
+                key={item.labelKey}
                 to={item.to}
                 onClick={onClose}
                 style={{
@@ -130,11 +132,11 @@ export default function NavDrawer({ isOpen, onClose }: NavDrawerProps) {
                 }}
               >
                 <span style={{ fontSize: "18px" }}>{item.icon}</span>
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ) : (
               <a
-                key={item.label}
+                key={item.labelKey}
                 href={item.href}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -151,7 +153,7 @@ export default function NavDrawer({ isOpen, onClose }: NavDrawerProps) {
                 }}
               >
                 <span style={{ fontSize: "18px" }}>{item.icon}</span>
-                {item.label}
+                {t(item.labelKey)}
               </a>
             ),
           )}

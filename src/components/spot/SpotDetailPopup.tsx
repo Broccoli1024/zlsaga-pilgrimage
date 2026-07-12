@@ -39,10 +39,14 @@ interface Character {
   color_code: string | null;
 }
 
-const seasonLabel = (season: number, mediaType: string) => {
-  if (mediaType === "movie") return "劇場版";
-  if (season === 1) return "無印";
-  if (season === 2) return "リベンジ";
+const seasonLabel = (
+  season: number,
+  mediaType: string,
+  t: (key: string) => string,
+) => {
+  if (mediaType === "movie") return t("detail.seasonMovie");
+  if (season === 1) return t("detail.seasonS1");
+  if (season === 2) return t("detail.seasonS2");
   return `シーズン${season}`;
 };
 
@@ -194,7 +198,7 @@ export default function SpotDetailPopup({
             border: `0.5px solid ${isSacred ? "var(--color-primary)" : "var(--color-border)"}`,
           }}
         >
-          {isSacred ? "聖地" : "観光"}
+          {isSacred ? t("detail.sacred") : t("detail.nonSacred")}
         </span>
       </div>
 
@@ -262,7 +266,7 @@ export default function SpotDetailPopup({
             color: "var(--color-text-muted)",
           }}
         >
-          ⏱ 滞在目安：約{spot.duration_min}分
+          {t("detail.stayTime", { min: spot.duration_min })}
         </p>
       )}
 
@@ -277,7 +281,7 @@ export default function SpotDetailPopup({
               color: "var(--color-text-sub)",
             }}
           >
-            登場キャラクター
+            {t("detail.characters")}
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
             {characters.map((c) => (
@@ -312,7 +316,7 @@ export default function SpotDetailPopup({
               color: "var(--color-text-sub)",
             }}
           >
-            登場エピソード
+            {t("detail.episodes")}
           </p>
           {episodes.map((ep) => (
             <div
@@ -325,10 +329,11 @@ export default function SpotDetailPopup({
               }}
             >
               <strong style={{ color: "var(--color-primary)" }}>
-                {seasonLabel(ep.season, ep.media_type)}
-                {ep.media_type !== "movie" && ` 第${ep.episode_number}話`}
+                {seasonLabel(ep.season, ep.media_type, t)}
+                {ep.media_type !== "movie" &&
+                  ` ${t("detail.episodeNum", { num: ep.episode_number })}`}
               </strong>{" "}
-              {isEn ? (ep.title_en ?? ep.title) : ep.title}
+              {ep.title}
               {(isEn ? ep.scene_description_en : ep.scene_description) && (
                 <div
                   style={{
@@ -390,7 +395,7 @@ export default function SpotDetailPopup({
                   : "var(--color-text-sub)",
               }}
             >
-              {isFavorite ? "⭐" : "☆"} お気に入り
+              {isFavorite ? "⭐" : "☆"} {t("detail.favorite")}
             </button>
             <button
               onClick={onUnCheckin}

@@ -241,7 +241,7 @@ export default function MyPage() {
               color: "var(--color-text-muted)",
             }}
           >
-            マイページ
+            {t("mypage.myPage")}
           </p>
           <ProfileEditor user={user} />
         </div>
@@ -266,7 +266,7 @@ export default function MyPage() {
             }}
           >
             {t("mypage.visitedSpots")}
-            {showMainOnly ? "（メインのみ）" : "（全件）"}
+            {showMainOnly ? t("mypage.mainOnlySuffix") : t("mypage.allSuffix")}
           </p>
           <p
             style={{
@@ -314,7 +314,9 @@ export default function MyPage() {
             fontSize: "var(--font-size-xs)",
           }}
         >
-          🔄 {showMainOnly ? "全件表示に切替" : "メインのみ表示に切替"}
+          {showMainOnly
+            ? t("mypage.switchToAll")
+            : t("mypage.switchToMainOnly")}
         </button>
 
         {/* タブ */}

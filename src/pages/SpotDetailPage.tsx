@@ -36,11 +36,15 @@ interface EpisodeInfo {
   scene_description_en: string | null;
 }
 
-const seasonLabel = (season: number, mediaType: string, isEn: boolean) => {
-  if (mediaType === "movie") return isEn ? "Movie" : "劇場版";
-  if (season === 1) return isEn ? "Original" : "無印";
-  if (season === 2) return isEn ? "Revenge" : "リベンジ";
-  return isEn ? `Season ${season}` : `シーズン${season}`;
+const seasonLabel = (
+  season: number,
+  mediaType: string,
+  t: (key: string) => string,
+) => {
+  if (mediaType === "movie") return t("detail.seasonMovie");
+  if (season === 1) return t("detail.seasonS1");
+  if (season === 2) return t("detail.seasonS2");
+  return `シーズン${season}`;
 };
 
 export default function SpotDetailPage() {
@@ -270,7 +274,9 @@ export default function SpotDetailPage() {
           justifyContent: "center",
         }}
       >
-        <p style={{ color: "var(--color-text-muted)" }}>読み込み中...</p>
+        <p style={{ color: "var(--color-text-muted)" }}>
+          {t("result.loading")}
+        </p>
       </div>
     );
   }
@@ -385,7 +391,7 @@ export default function SpotDetailPage() {
                 border: `0.5px solid ${isSacred ? "var(--color-primary)" : "var(--color-border)"}`,
               }}
             >
-              {isSacred ? (isEn ? "Sacred" : "聖地") : isEn ? "Spot" : "観光"}
+              {isSacred ? t("detail.sacred") : t("detail.nonSacred")}
             </span>
           </div>
         </div>
@@ -452,8 +458,7 @@ export default function SpotDetailPage() {
               marginBottom: "var(--space-md)",
             }}
           >
-            ⏱ {isEn ? "Approx." : "滞在目安：約"} {spot.duration_min}{" "}
-            {isEn ? "min" : "分"}
+            {t("detail.stayTime", { min: spot.duration_min })}
           </p>
         )}
 
@@ -476,7 +481,7 @@ export default function SpotDetailPage() {
                 color: "var(--color-text-muted)",
               }}
             >
-              {isEn ? "Characters" : "登場キャラクター"}
+              {t("detail.characters")}
             </p>
             <div
               style={{
@@ -525,7 +530,7 @@ export default function SpotDetailPage() {
                 color: "var(--color-text-muted)",
               }}
             >
-              {isEn ? "Featured Episodes" : "登場エピソード"}
+              {t("detail.episodes")}
             </p>
             {episodes.map((ep) => (
               <div
@@ -539,13 +544,11 @@ export default function SpotDetailPage() {
                 }}
               >
                 <strong style={{ color: "var(--color-primary)" }}>
-                  {seasonLabel(ep.season, ep.media_type, isEn)}
+                  {seasonLabel(ep.season, ep.media_type, t)}
                   {ep.media_type !== "movie" &&
-                    (isEn
-                      ? ` Ep.${ep.episode_number}`
-                      : ` 第${ep.episode_number}話`)}
+                    ` ${t("detail.episodeNum", { num: ep.episode_number })}`}
                 </strong>{" "}
-                {isEn ? (ep.title_en ?? ep.title) : ep.title}
+                {ep.title}
                 {(isEn ? ep.scene_description_en : ep.scene_description) && (
                   <div
                     style={{

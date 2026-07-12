@@ -49,7 +49,7 @@ export default function SpotListPanel({
   onOpenChange,
   isSpotSacred,
 }: Props) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isEn = i18n.language.startsWith("en");
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -119,7 +119,7 @@ export default function SpotListPanel({
           color: "var(--color-text-main)",
         }}
       >
-        スポット一覧
+        {t("list.spotList")}
         <span
           style={{
             fontSize: "var(--font-size-xs)",
@@ -128,7 +128,7 @@ export default function SpotListPanel({
             fontWeight: "normal",
           }}
         >
-          {filteredSpots.length}件
+          {t("list.count", { count: filteredSpots.length })}
         </span>
       </p>
 
@@ -139,7 +139,7 @@ export default function SpotListPanel({
         onChange={(e) =>
           onFiltersChange({ ...filters, searchQuery: e.target.value })
         }
-        placeholder="🔍 スポットを検索"
+        placeholder={t("list.search")}
         style={{
           ...selectStyle,
           marginBottom: "var(--space-sm)",
@@ -156,9 +156,9 @@ export default function SpotListPanel({
       >
         {(
           [
-            ["all", "すべて"],
-            ["sacred", "聖地のみ"],
-            ["non_sacred", "非聖地のみ"],
+            ["all", t("list.all")],
+            ["sacred", t("list.sacredOnly")],
+            ["non_sacred", t("list.nonSacredOnly")],
           ] as [SacredFilter, string][]
         ).map(([value, label]) => (
           <button
@@ -179,7 +179,7 @@ export default function SpotListPanel({
         }
         style={selectStyle}
       >
-        <option value="all">エリア：すべて</option>
+        <option value="all">{t("list.areaAll")}</option>
         {areas.map((area) => (
           <option key={area.id} value={area.id}>
             {isEn ? (area.name_en ?? area.name) : area.name}
@@ -194,7 +194,7 @@ export default function SpotListPanel({
         }
         style={selectStyle}
       >
-        <option value="all">カテゴリ：すべて</option>
+        <option value="all">{t("list.categoryAll")}</option>
         {categories.map((cat) => (
           <option key={cat.id} value={cat.id}>
             {isEn ? (cat.name_en ?? cat.name) : cat.name}
@@ -209,7 +209,7 @@ export default function SpotListPanel({
         }
         style={selectStyle}
       >
-        <option value="all">キャラクター：すべて</option>
+        <option value="all">{t("list.characterAll")}</option>
         {characters.map((char) => (
           <option key={char.id} value={char.id}>
             {isEn ? (char.name_en ?? char.name) : char.name}
@@ -224,7 +224,7 @@ export default function SpotListPanel({
         }
         style={{ ...selectStyle, marginBottom: "var(--space-sm)" }}
       >
-        <option value="all">登場度：すべて</option>
+        <option value="all">{t("list.tagAll")}</option>
         {significanceTags
           .filter((t) => t.name !== "聖地")
           .map((tag) => (
@@ -244,9 +244,9 @@ export default function SpotListPanel({
       >
         {(
           [
-            ["all", "すべて"],
-            ["visited", "訪問済み"],
-            ["not_visited", "未訪問"],
+            ["all", t("list.all")],
+            ["visited", t("list.visited")],
+            ["not_visited", t("list.notVisited")],
           ] as [CheckinFilter, string][]
         ).map(([value, label]) => (
           <button
@@ -283,7 +283,7 @@ export default function SpotListPanel({
             })
           }
         />
-        ⭐ お気に入りのみ表示
+        {t("list.favoriteOnly")}
       </label>
 
       {/* リセット */}
@@ -313,7 +313,7 @@ export default function SpotListPanel({
             cursor: "pointer",
           }}
         >
-          🔄 フィルタをリセット
+          {t("list.resetFilter")}
         </button>
       )}
     </div>
@@ -330,7 +330,7 @@ export default function SpotListPanel({
             textAlign: "center",
           }}
         >
-          条件に合うスポットがありません
+          {t("list.noResults")}
         </p>
       )}
       {filteredSpots.map((spot) => (
@@ -427,7 +427,10 @@ export default function SpotListPanel({
                 {spot.category_id && (
                   <span>・{getCategoryName(spot.category_id)}</span>
                 )}
-                <span>・{isSpotSacred(spot) ? "聖地" : "観光"}</span>
+                <span>
+                  ・
+                  {isSpotSacred(spot) ? t("list.sacred") : t("list.nonSacred")}
+                </span>
               </div>
             </div>
           </div>
@@ -468,7 +471,7 @@ export default function SpotListPanel({
               gap: "6px",
             }}
           >
-            📋 一覧
+            {t("list.open")}
             {hasActiveFilter && (
               <span
                 style={{
@@ -514,7 +517,7 @@ export default function SpotListPanel({
                   zIndex: 1,
                 }}
               >
-                ✕ 閉じる
+                {t("list.close")}
               </button>
               {filterSection}
             </div>
@@ -551,7 +554,7 @@ export default function SpotListPanel({
           transition: "left 0.2s",
         }}
       >
-        {isOpen ? "✕ 閉じる" : "📋 一覧"}
+        {isOpen ? t("list.close") : t("list.open")}
         {hasActiveFilter && !isOpen && (
           <span
             style={{

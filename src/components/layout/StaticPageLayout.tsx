@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import NavMenuButton from "../ui/NavMenuButton";
 
 interface StaticPageLayoutProps {
@@ -13,6 +14,7 @@ export default function StaticPageLayout({
   children,
   onMenuOpen,
 }: StaticPageLayoutProps) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -39,7 +41,7 @@ export default function StaticPageLayout({
             textDecoration: "none",
           }}
         >
-          ← 地図に戻る
+          ← {t("result.backToMap")}
         </Link>
 
         <h1

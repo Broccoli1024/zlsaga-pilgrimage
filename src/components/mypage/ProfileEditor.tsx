@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { useTranslation } from "react-i18next";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -11,6 +12,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export default function ProfileEditor({ user }: ProfileEditorProps) {
+  const { t } = useTranslation();
   const updateProfile = useAuthStore((state) => state.updateProfile);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,11 +34,11 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
     setError(null);
 
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      setError("対応していない画像形式です（JPEG/PNG/WebP/GIFのみ）");
+      setError(t("profile.invalidImageType"));
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      setError("画像サイズは5MB以下にしてください");
+      setError(t("profile.imageTooLarge"));
       return;
     }
 
@@ -53,7 +55,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
         });
 
       if (uploadError) {
-        setError(`アップロードに失敗しました: ${uploadError.message}`);
+        setError(t("profile.uploadFailed", { message: uploadError.message }));
         return;
       }
 
@@ -69,7 +71,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
         avatarUrl: bustedUrl,
       });
       if (updateError) {
-        setError(`プロフィールの更新に失敗しました: ${updateError}`);
+        setError(t("profile.profileUpdateFailed", { message: updateError }));
       }
     } finally {
       setUploading(false);
@@ -81,11 +83,11 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
     setError(null);
     const trimmed = displayName.trim();
     if (trimmed.length === 0) {
-      setError("ユーザー名を入力してください");
+      setError(t("profile.nameRequired"));
       return;
     }
     if (trimmed.length > 30) {
-      setError("ユーザー名は30文字以内で入力してください");
+      setError(t("profile.nameTooLong"));
       return;
     }
 
@@ -95,7 +97,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
         displayName: trimmed,
       });
       if (updateError) {
-        setError(`保存に失敗しました: ${updateError}`);
+        setError(t("profile.saveFailed", { message: updateError }));
         return;
       }
       setIsEditing(false);
@@ -129,7 +131,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
             flexShrink: 0,
             opacity: uploading ? 0.5 : 1,
           }}
-          title="クリックして画像を変更"
+          title={t("profile.changeImage")}
         >
           {!avatarSrc && "👤"}
         </div>
@@ -163,7 +165,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="ユーザー名"
+              placeholder={t("profile.usernamePlaceholder")}
               maxLength={30}
               style={{
                 fontSize: "var(--font-size-md)",
@@ -186,7 +188,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
                 cursor: saving ? "default" : "pointer",
               }}
             >
-              保存
+              {t("profile.save")}
             </button>
             <button
               onClick={() => {
@@ -203,7 +205,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
                 cursor: "pointer",
               }}
             >
-              取消
+              {t("profile.cancel")}
             </button>
           </div>
         ) : (
@@ -234,7 +236,7 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
                 flexShrink: 0,
               }}
             >
-              編集
+              {t("profile.edit")}
             </button>
           </div>
         )}

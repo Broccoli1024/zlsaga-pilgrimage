@@ -23,7 +23,8 @@ export default function RouteResultPage() {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language.startsWith("en");
 
   const initialState = location.state as RouteState | null;
   const [routeData, setRouteData] = useState<RouteState | null>(initialState);
@@ -90,7 +91,9 @@ export default function RouteResultPage() {
           justifyContent: "center",
         }}
       >
-        <p style={{ color: "var(--color-text-muted)" }}>読み込み中...</p>
+        <p style={{ color: "var(--color-text-muted)" }}>
+          {t("result.loading")}
+        </p>
       </div>
     );
   }
@@ -287,7 +290,7 @@ export default function RouteResultPage() {
                       color: "var(--color-text-main)",
                     }}
                   >
-                    {spot.name}
+                    {isEn ? (spot.name_en ?? spot.name) : spot.name}
                   </p>
                   <p
                     style={{
