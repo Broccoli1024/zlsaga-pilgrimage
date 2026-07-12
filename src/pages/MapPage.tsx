@@ -1888,9 +1888,9 @@ export default function MapPage() {
             >
               <div
                 style={{
-                  fontSize: "28px",
+                  fontSize: "18px",
                   cursor: matched ? "pointer" : "default",
-                  filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.3))",
+                  filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.3))",
                   opacity: matched ? 1 : 0.25,
                 }}
               >

@@ -67,7 +67,7 @@ async function getAccessToken(): Promise<string> {
   return data.access_token;
 }
 
-// 短縮URLを展開し、最終的なURLを返す
+// 短縮URLを展開し、最終的なURL（またはHTML本文）を返す
 async function resolveShortUrl(url: string): Promise<string> {
   if (!url) return url;
   if (!url.includes("goo.gl") && !url.includes("maps.app")) {
@@ -75,6 +75,19 @@ async function resolveShortUrl(url: string): Promise<string> {
   }
   try {
     const res = await fetch(url, { redirect: "follow" });
+    // 通常のHTTPリダイレクトで最終URLに座標が含まれていればそれを使う
+    if (extractCoordinates(res.url)) return res.url;
+
+    // maps.app.goo.gl は実HTTPリダイレクトではなく、JSでの遷移を行う
+    // インタースティシャルページを返すことがあるため、本文中に埋め込まれた
+    // 座標・URLを探す
+    const body = await res.text();
+    const bodyCoords = extractCoordinates(body);
+    if (bodyCoords) return body;
+
+    const embeddedUrl = findEmbeddedMapsUrl(body);
+    if (embeddedUrl) return embeddedUrl;
+
     return res.url;
   } catch {
     return url;
@@ -82,10 +95,28 @@ async function resolveShortUrl(url: string): Promise<string> {
 }
 
 // URLから緯度経度を抽出
-function extractCoordinates(url: string): { lat: string; lng: string } | null {
-  const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (!match) return null;
-  return { lat: match[1], lng: match[2] };
+function extractCoordinates(text: string): { lat: string; lng: string } | null {
+  // 通常の "@緯度,経度,zoom" 形式
+  const atMatch = text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (atMatch) return { lat: atMatch[1], lng: atMatch[2] };
+
+  // 主要施設・POIの共有リンクでよく見られる "!3d緯度!4d経度" 形式
+  const bangMatch = text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (bangMatch) return { lat: bangMatch[1], lng: bangMatch[2] };
+
+  // "?q=緯度,経度" や "ll=緯度,経度" 形式
+  const qMatch = text.match(/[?&](?:q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (qMatch) return { lat: qMatch[1], lng: qMatch[2] };
+
+  return null;
+}
+
+// テキスト（HTML本文など）の中に埋め込まれたGoogleマップの完全なURLを探す
+function findEmbeddedMapsUrl(text: string): string | null {
+  const match = text.match(
+    /https:\\?\/\\?\/www\.google\.com\\?\/maps\\?\/place\\?\/[^"'\s\\]+/,
+  );
+  return match ? match[0].replace(/\\\//g, "/") : null;
 }
 
 // DeepL APIで日本語テキストを英語に翻訳
@@ -203,9 +234,9 @@ Deno.serve(async (req) => {
     // 未取得の回答だけ、URL展開・翻訳処理を行う
     const newRecords = await Promise.all(
       newRecordsRaw.map(async (obj: Record<string, string>) => {
-        const mapUrlKey = Object.keys(obj).find((k) =>
-          k.startsWith("Googleマップ"),
-        );
+        const mapUrlKey = Object.keys(obj)
+          .filter((k) => k.startsWith("Googleマップ"))
+          .find((k) => obj[k]);
         if (mapUrlKey && obj[mapUrlKey]) {
           const resolvedUrl = await resolveShortUrl(obj[mapUrlKey]);
           const coords = extractCoordinates(resolvedUrl);
@@ -214,11 +245,13 @@ Deno.serve(async (req) => {
           obj["_lng"] = coords?.lng ?? "";
         }
 
-        const nameKey = Object.keys(obj).find(
-          (k) => k === "スポット名" || k.startsWith("スポット名__"),
-        );
+        const nameKey = Object.keys(obj)
+          .filter((k) => k === "スポット名" || k.startsWith("スポット名__"))
+          .find((k) => obj[k]);
         const name = nameKey ? obj[nameKey] : "";
-        const descKey = Object.keys(obj).find((k) => k.includes("説明"));
+        const descKey = Object.keys(obj)
+          .filter((k) => k.includes("説明"))
+          .find((k) => obj[k]);
         const description = descKey ? obj[descKey] : "";
 
         if (name) obj["_name_en"] = await translateToEnglish(name);
