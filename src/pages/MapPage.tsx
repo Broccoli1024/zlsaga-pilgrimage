@@ -977,8 +977,8 @@ export default function MapPage() {
                   <>
                     <span
                       style={{
-                        width: "40px",
-                        height: "40px",
+                        width: "30px",
+                        height: "30px",
                         borderRadius: "50%",
                         background: avatarUrl
                           ? `center / cover no-repeat url(${avatarUrl})`
