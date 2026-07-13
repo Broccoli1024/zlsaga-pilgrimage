@@ -111,7 +111,18 @@
     "processing": "Processing...",
     "toSignup": "Create an account",
     "toLogin": "Already have an account?",
-    "confirmationSent": "Confirmation email sent. Please check your inbox."
+    "confirmationSent": "Confirmation email sent. Please check your inbox.",
+    "forgotPassword": "Forgot your password?",
+    "resetTitle": "Reset Password",
+    "resetSubmit": "Send Reset Email",
+    "resetSent": "A password reset email has been sent. Please check your inbox.",
+    "backToLogin": "← Back to Login",
+    "newPasswordTitle": "Set a New Password",
+    "newPassword": "New Password",
+    "newPasswordSubmit": "Update Password",
+    "newPasswordSet": "Password updated. Redirecting to login...",
+    "invalidResetLink": "This link is invalid or has expired. Please request a new password reset.",
+    "passwordTooShort": "Password must be at least 6 characters"
   },
   "route": {
     "title": "Create Route",

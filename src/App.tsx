@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { supabase } from "./lib/supabase";
 import { useAuthStore } from "./stores/authStore";
 import MapPage from "./pages/MapPage";
@@ -9,6 +15,7 @@ import RouteNewPage from "./pages/RouteNewPage";
 import RouteResultPage from "./pages/RouteResultPage";
 import MyPage from "./pages/MyPage";
 import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AdminPage from "./pages/AdminPage";
 import AboutPage from "./pages/AboutPage";
 import FaqPage from "./pages/FaqPage";
@@ -20,8 +27,23 @@ import NavMenuButton from "./components/ui/NavMenuButton";
 
 function AppRoutes() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isMapPage = location.pathname === "/";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // パスワード再設定メールのリンクを踏んだ際、Redirect URLsの設定漏れ等で
+    // Site URL（"/"）にフォールバックしてしまっても、確実に
+    // /reset-password へ遷移させる保険
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        navigate("/reset-password", { replace: true });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   return (
     <>
@@ -41,6 +63,7 @@ function AppRoutes() {
         <Route path="/routes/:id" element={<RouteResultPage />} />
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route
           path="/about"

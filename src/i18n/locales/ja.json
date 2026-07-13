@@ -111,7 +111,18 @@
     "processing": "処理中...",
     "toSignup": "新規登録はこちら",
     "toLogin": "ログインはこちら",
-    "confirmationSent": "確認メールを送信しました。メールを確認してください。"
+    "confirmationSent": "確認メールを送信しました。メールを確認してください。",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "resetTitle": "パスワードの再設定",
+    "resetSubmit": "リセットメールを送信",
+    "resetSent": "パスワード再設定用のメールを送信しました。メールを確認してください。",
+    "backToLogin": "← ログインに戻る",
+    "newPasswordTitle": "新しいパスワードを設定",
+    "newPassword": "新しいパスワード",
+    "newPasswordSubmit": "パスワードを更新",
+    "newPasswordSet": "パスワードを更新しました。ログインページに移動します...",
+    "invalidResetLink": "リンクが無効か期限切れです。もう一度パスワード再設定をお試しください。",
+    "passwordTooShort": "パスワードは6文字以上で入力してください"
   },
   "route": {
     "title": "ルートを作成",

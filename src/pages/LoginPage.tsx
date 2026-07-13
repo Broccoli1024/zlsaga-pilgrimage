@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -19,8 +20,20 @@ export default function LoginPage() {
     setError(null);
     setMessage(null);
     setLoading(true);
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({ email, password });
+    if (isResetMode) {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) setError(error.message);
+      else setMessage(t("login.resetSent"));
+    } else if (isSignUp) {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
       if (error) setError(error.message);
       else setMessage(t("login.confirmationSent"));
     } else {
@@ -96,7 +109,11 @@ export default function LoginPage() {
                 fontWeight: "500",
               }}
             >
-              {isSignUp ? t("login.signupTitle") : t("login.title")}
+              {isResetMode
+                ? t("login.resetTitle")
+                : isSignUp
+                  ? t("login.signupTitle")
+                  : t("login.title")}
             </h1>
           </div>
           <LangToggle />
@@ -131,24 +148,26 @@ export default function LoginPage() {
           />
         </div>
 
-        <div style={{ marginBottom: "var(--space-lg)" }}>
-          <label
-            style={{
-              fontSize: "var(--font-size-sm)",
-              color: "var(--color-text-sub)",
-              fontWeight: "500",
-            }}
-          >
-            {t("login.password")}
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-            style={inputStyle}
-          />
-        </div>
+        {!isResetMode && (
+          <div style={{ marginBottom: "var(--space-lg)" }}>
+            <label
+              style={{
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-text-sub)",
+                fontWeight: "500",
+              }}
+            >
+              {t("login.password")}
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              style={inputStyle}
+            />
+          </div>
+        )}
 
         {error && (
           <div
@@ -191,24 +210,67 @@ export default function LoginPage() {
         >
           {loading
             ? t("login.processing")
-            : isSignUp
-              ? t("login.signupSubmit")
-              : t("login.submit")}
+            : isResetMode
+              ? t("login.resetSubmit")
+              : isSignUp
+                ? t("login.signupSubmit")
+                : t("login.submit")}
         </Button>
 
-        <p
-          onClick={() => setIsSignUp(!isSignUp)}
-          style={{
-            marginTop: "var(--space-lg)",
-            fontSize: "var(--font-size-sm)",
-            color: "var(--color-primary)",
-            cursor: "pointer",
-            textAlign: "center",
-            textDecoration: "underline",
-          }}
-        >
-          {isSignUp ? t("login.toLogin") : t("login.toSignup")}
-        </p>
+        {isResetMode ? (
+          <p
+            onClick={() => {
+              setIsResetMode(false);
+              setError(null);
+              setMessage(null);
+            }}
+            style={{
+              marginTop: "var(--space-lg)",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-primary)",
+              cursor: "pointer",
+              textAlign: "center",
+              textDecoration: "underline",
+            }}
+          >
+            {t("login.backToLogin")}
+          </p>
+        ) : (
+          <>
+            <p
+              onClick={() => setIsSignUp(!isSignUp)}
+              style={{
+                marginTop: "var(--space-lg)",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-primary)",
+                cursor: "pointer",
+                textAlign: "center",
+                textDecoration: "underline",
+              }}
+            >
+              {isSignUp ? t("login.toLogin") : t("login.toSignup")}
+            </p>
+            {!isSignUp && (
+              <p
+                onClick={() => {
+                  setIsResetMode(true);
+                  setError(null);
+                  setMessage(null);
+                }}
+                style={{
+                  marginTop: "var(--space-sm)",
+                  fontSize: "var(--font-size-sm)",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  textDecoration: "underline",
+                }}
+              >
+                {t("login.forgotPassword")}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
