@@ -986,8 +986,8 @@ export default function MapPage() {
                   <>
                     <span
                       style={{
-                        width: "30px",
-                        height: "30px",
+                        width: "20px",
+                        height: "20px",
                         borderRadius: "50%",
                         background: avatarUrl
                           ? `center / cover no-repeat url(${avatarUrl})`
@@ -1069,7 +1069,7 @@ export default function MapPage() {
           style={{
             position: "absolute",
             top: 56,
-            left: isPanelOpen ? PANEL_WIDTH + 8 : 10,
+            left: isMobile ? 10 : isPanelOpen ? PANEL_WIDTH + 8 : 10,
             zIndex: 7,
             display: "flex",
             flexDirection: "column",
