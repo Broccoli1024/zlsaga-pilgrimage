@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pilgrimapp.vercel.app/sitemap.xml
