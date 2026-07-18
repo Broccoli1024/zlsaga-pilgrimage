@@ -24,6 +24,7 @@ import TermsPage from "./pages/TermsPage";
 import LicensePage from "./pages/LicensePage";
 import NavDrawer from "./components/ui/NavDrawer";
 import NavMenuButton from "./components/ui/NavMenuButton";
+import { HelmetProvider } from "react-helmet-async";
 
 function AppRoutes() {
   const location = useLocation();
@@ -106,9 +107,11 @@ function App() {
   }, [setUser]);
 
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </HelmetProvider>
   );
 }
 
