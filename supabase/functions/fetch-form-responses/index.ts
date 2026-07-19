@@ -74,21 +74,34 @@ async function resolveShortUrl(url: string): Promise<string> {
     return url;
   }
   try {
-    const res = await fetch(url, { redirect: "follow" });
-    // 通常のHTTPリダイレクトで最終URLに座標が含まれていればそれを使う
-    if (extractCoordinates(res.url)) return res.url;
+    const tryFetch = async (userAgent: string) => {
+      const res = await fetch(url, {
+        redirect: "follow",
+        headers: {
+          "User-Agent": userAgent,
+          "Accept-Language": "ja-JP,ja;q=0.9",
+        },
+      });
+      if (extractCoordinates(res.url)) return res.url;
+      const body = await res.text();
+      if (extractCoordinates(body)) return body;
+      const embeddedUrl = findEmbeddedMapsUrl(body);
+      if (embeddedUrl) return embeddedUrl;
+      return null;
+    };
 
-    // maps.app.goo.gl は実HTTPリダイレクトではなく、JSでの遷移を行う
-    // インタースティシャルページを返すことがあるため、本文中に埋め込まれた
-    // 座標・URLを探す
-    const body = await res.text();
-    const bodyCoords = extractCoordinates(body);
-    if (bodyCoords) return body;
+    const desktopUA =
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+    const mobileUA =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
-    const embeddedUrl = findEmbeddedMapsUrl(body);
-    if (embeddedUrl) return embeddedUrl;
+    const first = await tryFetch(desktopUA);
+    if (first) return first;
 
-    return res.url;
+    const second = await tryFetch(mobileUA);
+    if (second) return second;
+
+    return url;
   } catch {
     return url;
   }
