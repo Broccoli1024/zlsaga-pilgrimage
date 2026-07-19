@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
+import AdSenseUnit from "../components/ads/AdSenseUnit";
+import RakutenAdBanner from "../components/ads/RakutenAdBanner";
+import { RAKUTEN_ADS } from "../data/rakutenAds";
 import type { Spot } from "../types";
 
 interface RouteState {
@@ -348,6 +351,29 @@ export default function RouteResultPage() {
           >
             {t("result.backToMap")}
           </button>
+        </div>
+
+        {/* 広告エリア */}
+        <div
+          style={{
+            marginTop: "var(--space-xl)",
+            paddingTop: "var(--space-lg)",
+            borderTop: "0.5px solid var(--color-border)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "var(--font-size-xs)",
+              color: "var(--color-text-muted)",
+              marginBottom: "var(--space-sm)",
+            }}
+          >
+            {isEn ? "Nearby hotels" : "近くの宿を探す"}
+          </p>
+          <RakutenAdBanner html={RAKUTEN_ADS.apaHotelSaga} />
+          <div style={{ marginTop: "var(--space-md)" }}>
+            <AdSenseUnit slot="0000000000" />
+          </div>
         </div>
       </div>
     </div>

@@ -1,0 +1,9 @@
+/**
+ * 楽天アフィリエイトの「リンク作成」画面で発行されたHTMLタグをそのまま貼る。
+ * 新しい広告を追加する場合はここに追記し、使いたいページで
+ * `<RakutenAdBanner html={RAKUTEN_ADS.xxx} />` のように参照する。
+ */
+export const RAKUTEN_ADS = {
+  /** アパホテル〈佐賀駅南口〉 */
+  apaHotelSaga: `<table border="0" cellpadding="0" cellspacing="0"><tr><td><div style="border:1px solid #95a5a6;border-radius:.75rem;background-color:#FFFFFF;margin:0px;padding:5px;text-align:center;overflow:hidden;"><table><tr><td style="width:100px"><a href="https://hb.afl.rakuten.co.jp/hgc/55e59b86.a044b59a.55e59b87.e1aa08be/?pc=https%3A%2F%2Ftravel.rakuten.co.jp%2FHOTEL%2F448%2F448.html&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIxMDB4MTAwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D" target="_blank" rel="nofollow sponsored noopener" style="word-wrap:break-word;"><img src="https://hbb.afl.rakuten.co.jp/hgb/55e59b86.a044b59a.55e59b87.e1aa08be/?me_id=2100001&item_id=448&pc=https%3A%2F%2Fimg.travel.rakuten.co.jp%2Fimage%2Fimgr_100%3Fno%3D448" border="0" style="margin:2px" alt="" title=""></a></td><td style="vertical-align:top;display: block;"><p style="font-size:12px;line-height:1.4em;text-align:left;margin:0px;padding:2px 6px;word-wrap:break-word"><a href="https://hb.afl.rakuten.co.jp/hgc/55e59b86.a044b59a.55e59b87.e1aa08be/?pc=https%3A%2F%2Ftravel.rakuten.co.jp%2FHOTEL%2F448%2F448.html&link_type=picttext&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJwaWN0dGV4dCIsInNpemUiOiIxMDB4MTAwIiwibmFtIjoxLCJuYW1wIjoicmlnaHQiLCJjb20iOjEsImNvbXAiOiJkb3duIiwicHJpY2UiOjEsImJvciI6MSwiY29sIjoxLCJiYnRuIjoxLCJwcm9kIjowLCJhbXAiOmZhbHNlfQ%3D%3D" target="_blank" rel="nofollow sponsored noopener" style="word-wrap:break-word;">アパホテル〈佐賀駅南口〉</a></p></td></tr></table></div><br><p style="color:#000000;font-size:12px;line-height:1.4em;margin:5px;word-wrap:break-word"></p></td></tr></table>`,
+} as const;
