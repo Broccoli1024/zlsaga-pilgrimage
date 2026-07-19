@@ -32,7 +32,7 @@ export default function AboutPage({ onMenuOpen }: AboutPageProps) {
         description="ピルグリマップはアニメ・漫画・ゲーム作品の聖地巡礼を支援する地図アプリです。"
         canonical="/about"
       />
-      <StaticPageLayout onMenuOpen={onMenuOpen}>
+      <StaticPageLayout title={t("about.title")} onMenuOpen={onMenuOpen}>
         <p style={paragraphStyle}>{t("about.intro")}</p>
 
         <h2 style={headingStyle}>{t("about.canDoHeading")}</h2>

@@ -14,6 +14,7 @@ import type { SnapPoint } from "../components/ui/BottomSheet";
 import { useIsMobile } from "../hooks/useIsMobile";
 import type { Spot, SignificanceTag } from "../types";
 import { Link, useSearchParams } from "react-router-dom";
+import SEO from "../components/seo/SEO";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const PANEL_WIDTH = 300;
@@ -915,808 +916,279 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-      }}
-    >
-      {/* ヘッダー */}
+    <>
+      <SEO
+        title={
+          isEn
+            ? "Zombie Land Saga Pilgrimage Map"
+            : "ゾンビランドサガ 聖地巡礼マップ"
+        }
+        description={
+          isEn
+            ? "Find, filter, and plan routes to Zombie Land Saga pilgrimage spots in Saga Prefecture with Pilgrimapp."
+            : "ピルグリマップは、ゾンビランドサガの聖地（ロケ地・モデル地）を佐賀県内で検索し、巡礼ルートを計画できる地図アプリです。"
+        }
+        canonical="/"
+      />
       <div
         style={{
-          position: "absolute",
-          top: 10,
-          right: 10,
-          zIndex: 2,
-          background: "var(--color-card)",
-          padding: "8px 14px",
-          borderRadius: "var(--radius-sm)",
-          boxShadow: "var(--shadow-md)",
-          fontSize: "var(--font-size-sm)",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          borderTop: "2px solid var(--color-primary)",
-          maxWidth: "calc(100vw - 20px)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: "100vw",
+          height: "100vh",
+          overflow: "hidden",
         }}
       >
-        <LangToggle />
-        <div
-          style={{
-            width: "1px",
-            height: "16px",
-            background: "var(--color-border)",
-          }}
-        />
-        {user ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              minWidth: 0,
-            }}
-          >
-            <Link
-              to="/mypage"
-              style={{
-                textDecoration: "none",
-                color: "var(--color-text-main)",
-                fontSize: "var(--font-size-sm)",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                minWidth: 0,
-              }}
-            >
-              {(() => {
-                const avatarUrl = user.user_metadata?.avatar_url as
-                  | string
-                  | undefined;
-                const displayName = user.user_metadata?.display_name as
-                  | string
-                  | undefined;
-                return (
-                  <>
-                    <span
-                      style={{
-                        width: "30px",
-                        height: "30px",
-                        borderRadius: "50%",
-                        background: avatarUrl
-                          ? `center / cover no-repeat url(${avatarUrl})`
-                          : "var(--color-bg)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "12px",
-                        flexShrink: 0,
-                        border: "1px solid var(--color-border)",
-                      }}
-                    >
-                      {!avatarUrl && "👤"}
-                    </span>
-                    <span
-                      style={{
-                        maxWidth: "min(140px, 30vw)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {displayName || user.email}
-                    </span>
-                  </>
-                );
-              })()}
-            </Link>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-              }}
-              style={{
-                padding: "3px 8px",
-                fontSize: "var(--font-size-xs)",
-                border: "0.5px solid var(--color-border)",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--color-card)",
-                color: "var(--color-text-muted)",
-                cursor: "pointer",
-              }}
-            >
-              {t("map.logout")}
-            </button>
-          </div>
-        ) : (
-          <a
-            href="/login"
-            style={{
-              color: "var(--color-primary)",
-              fontSize: "var(--font-size-sm)",
-              textDecoration: "none",
-            }}
-          >
-            {t("map.login")}
-          </a>
-        )}
-      </div>
-
-      {/* スポット一覧パネル */}
-      <SpotListPanel
-        spots={spots}
-        filteredSpots={filteredSpots}
-        checkedInSpotsMap={checkedInSpots}
-        areas={areas}
-        categories={categories}
-        characters={characters}
-        significanceTags={significanceTags}
-        filters={filters}
-        onFiltersChange={setFilters}
-        onSpotClick={(spot) => setSelectedSpot(spot)}
-        onOpenChange={setIsPanelOpen}
-        isSpotSacred={isSpotSacred}
-      />
-
-      {/* ルート作成パネル */}
-      {user && (
+        {/* ヘッダー */}
         <div
           style={{
             position: "absolute",
-            top: 56,
-            left: isMobile ? 10 : isPanelOpen ? PANEL_WIDTH + 8 : 10,
-            zIndex: 7,
+            top: 10,
+            right: 10,
+            zIndex: 2,
+            background: "var(--color-card)",
+            padding: "8px 14px",
+            borderRadius: "var(--radius-sm)",
+            boxShadow: "var(--shadow-md)",
+            fontSize: "var(--font-size-sm)",
             display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            maxHeight: "calc(100vh - 76px)",
-            overflowY: "auto",
-            transition: "left 0.2s",
+            alignItems: "center",
+            gap: "10px",
+            borderTop: "2px solid var(--color-primary)",
+            maxWidth: "calc(100vw - 20px)",
           }}
         >
-          {/* ルート作成 / キャンセルボタン */}
-          <button
-            onClick={() => {
-              if (routeMode) {
-                exitRouteMode();
-              } else {
-                setRouteMode(true);
-                setSelectedSpot(null);
-              }
-            }}
+          <LangToggle />
+          <div
             style={{
-              padding: "8px 16px",
-              borderRadius: "var(--radius-sm)",
-              border: routeMode ? "0.5px solid var(--color-primary)" : "none",
-              background: routeMode
-                ? "var(--color-card)"
-                : "var(--color-primary)",
-              color: routeMode ? "var(--color-primary)" : "var(--color-white)",
-              cursor: "pointer",
-              fontWeight: "500",
-              boxShadow: "var(--shadow-md)",
-              fontSize: "var(--font-size-sm)",
+              width: "1px",
+              height: "16px",
+              background: "var(--color-border)",
+            }}
+          />
+          {user ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                minWidth: 0,
+              }}
+            >
+              <Link
+                to="/mypage"
+                style={{
+                  textDecoration: "none",
+                  color: "var(--color-text-main)",
+                  fontSize: "var(--font-size-sm)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  minWidth: 0,
+                }}
+              >
+                {(() => {
+                  const avatarUrl = user.user_metadata?.avatar_url as
+                    | string
+                    | undefined;
+                  const displayName = user.user_metadata?.display_name as
+                    | string
+                    | undefined;
+                  return (
+                    <>
+                      <span
+                        style={{
+                          width: "30px",
+                          height: "30px",
+                          borderRadius: "50%",
+                          background: avatarUrl
+                            ? `center / cover no-repeat url(${avatarUrl})`
+                            : "var(--color-bg)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "12px",
+                          flexShrink: 0,
+                          border: "1px solid var(--color-border)",
+                        }}
+                      >
+                        {!avatarUrl && "👤"}
+                      </span>
+                      <span
+                        style={{
+                          maxWidth: "min(140px, 30vw)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {displayName || user.email}
+                      </span>
+                    </>
+                  );
+                })()}
+              </Link>
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                }}
+                style={{
+                  padding: "3px 8px",
+                  fontSize: "var(--font-size-xs)",
+                  border: "0.5px solid var(--color-border)",
+                  borderRadius: "var(--radius-sm)",
+                  background: "var(--color-card)",
+                  color: "var(--color-text-muted)",
+                  cursor: "pointer",
+                }}
+              >
+                {t("map.logout")}
+              </button>
+            </div>
+          ) : (
+            <a
+              href="/login"
+              style={{
+                color: "var(--color-primary)",
+                fontSize: "var(--font-size-sm)",
+                textDecoration: "none",
+              }}
+            >
+              {t("map.login")}
+            </a>
+          )}
+        </div>
+
+        {/* スポット一覧パネル */}
+        <SpotListPanel
+          spots={spots}
+          filteredSpots={filteredSpots}
+          checkedInSpotsMap={checkedInSpots}
+          areas={areas}
+          categories={categories}
+          characters={characters}
+          significanceTags={significanceTags}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onSpotClick={(spot) => setSelectedSpot(spot)}
+          onOpenChange={setIsPanelOpen}
+          isSpotSacred={isSpotSacred}
+        />
+
+        {/* ルート作成パネル */}
+        {user && (
+          <div
+            style={{
+              position: "absolute",
+              top: 56,
+              left: isMobile ? 10 : isPanelOpen ? PANEL_WIDTH + 8 : 10,
+              zIndex: 7,
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              maxHeight: "calc(100vh - 76px)",
+              overflowY: "auto",
+              transition: "left 0.2s",
             }}
           >
-            {routeMode ? `✕ ${t("map.cancel")}` : `🗺️ ${t("map.createRoute")}`}
-          </button>
+            {/* ルート作成 / キャンセルボタン */}
+            <button
+              onClick={() => {
+                if (routeMode) {
+                  exitRouteMode();
+                } else {
+                  setRouteMode(true);
+                  setSelectedSpot(null);
+                }
+              }}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "var(--radius-sm)",
+                border: routeMode ? "0.5px solid var(--color-primary)" : "none",
+                background: routeMode
+                  ? "var(--color-card)"
+                  : "var(--color-primary)",
+                color: routeMode
+                  ? "var(--color-primary)"
+                  : "var(--color-white)",
+                cursor: "pointer",
+                fontWeight: "500",
+                boxShadow: "var(--shadow-md)",
+                fontSize: "var(--font-size-sm)",
+              }}
+            >
+              {routeMode
+                ? `✕ ${t("map.cancel")}`
+                : `🗺️ ${t("map.createRoute")}`}
+            </button>
 
-          {/* ルート作成中パネル（スポット選択・設定） */}
-          {routeMode &&
-            !routeResult &&
-            (() => {
-              const summarySection = (
-                <div
-                  style={{
-                    padding: "var(--space-md) var(--space-lg)",
-                    borderBottom: isMobile
-                      ? "none"
-                      : "0.5px solid var(--color-border-light)",
-                  }}
-                >
-                  <p
+            {/* ルート作成中パネル（スポット選択・設定） */}
+            {routeMode &&
+              !routeResult &&
+              (() => {
+                const summarySection = (
+                  <div
                     style={{
-                      margin: 0,
-                      fontWeight: "500",
-                      fontSize: "var(--font-size-sm)",
-                      color: "var(--color-text-main)",
+                      padding: "var(--space-md) var(--space-lg)",
+                      borderBottom: isMobile
+                        ? "none"
+                        : "0.5px solid var(--color-border-light)",
                     }}
                   >
-                    {t("map.selectedSpots")}
-                    <span
-                      style={{
-                        fontSize: "var(--font-size-xs)",
-                        color: "var(--color-text-muted)",
-                        marginLeft: "6px",
-                        fontWeight: "normal",
-                      }}
-                    >
-                      {selectedForRoute.length}件
-                    </span>
-                  </p>
-                  {selectedForRoute.length === 0 && (
                     <p
                       style={{
-                        margin: "var(--space-xs) 0 0",
-                        fontSize: "var(--font-size-xs)",
-                        color: "var(--color-text-muted)",
+                        margin: 0,
+                        fontWeight: "500",
+                        fontSize: "var(--font-size-sm)",
+                        color: "var(--color-text-main)",
                       }}
                     >
-                      {t("map.tapToSelect")}
+                      {t("map.selectedSpots")}
+                      <span
+                        style={{
+                          fontSize: "var(--font-size-xs)",
+                          color: "var(--color-text-muted)",
+                          marginLeft: "6px",
+                          fontWeight: "normal",
+                        }}
+                      >
+                        {selectedForRoute.length}件
+                      </span>
                     </p>
-                  )}
-                </div>
-              );
-
-              const detailSection = (
-                <>
-                  {/* 選択スポット一覧 */}
-                  <div
-                    style={{
-                      padding: "var(--space-md) var(--space-lg)",
-                      borderBottom: "0.5px solid var(--color-border-light)",
-                    }}
-                  >
-                    {selectedForRoute.map((spot, i) => (
-                      <div
-                        key={spot.id}
+                    {selectedForRoute.length === 0 && (
+                      <p
                         style={{
+                          margin: "var(--space-xs) 0 0",
                           fontSize: "var(--font-size-xs)",
-                          padding: "6px 0",
-                          borderBottom: "0.5px solid var(--color-border-light)",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px",
+                          color: "var(--color-text-muted)",
                         }}
                       >
-                        <span
-                          style={{
-                            width: "18px",
-                            height: "18px",
-                            borderRadius: "50%",
-                            background: "var(--color-primary)",
-                            color: "var(--color-white)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "10px",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {i + 1}
-                        </span>
-                        <span
-                          style={{ flex: 1, color: "var(--color-text-main)" }}
-                        >
-                          {isEn ? (spot.name_en ?? spot.name) : spot.name}
-                        </span>
-                        <input
-                          type="number"
-                          value={getDurationForSpot(spot)}
-                          onChange={(e) => {
-                            const newVal = Number(e.target.value);
-                            setUserDurations((prev) => ({
-                              ...prev,
-                              [spot.id]: newVal,
-                            }));
-                          }}
-                          onBlur={async (e) => {
-                            if (!user) return;
-                            const newVal = Number(e.target.value);
-                            await supabase.from("user_spot_durations").upsert(
-                              {
-                                user_id: user.id,
-                                spot_id: spot.id,
-                                duration_min: newVal,
-                              },
-                              { onConflict: "user_id,spot_id" },
-                            );
-                          }}
-                          style={{
-                            width: "36px",
-                            fontSize: "10px",
-                            padding: "2px",
-                            textAlign: "right",
-                            border: "0.5px solid var(--color-border)",
-                            borderRadius: "var(--radius-sm)",
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            color: "var(--color-text-muted)",
-                          }}
-                        >
-                          {t("route.minutes")}
-                        </span>
-                        <span
-                          onClick={() => handleMarkerClickForRoute(spot)}
-                          style={{
-                            cursor: "pointer",
-                            color: "var(--color-primary)",
-                            fontSize: "12px",
-                          }}
-                        >
-                          ✕
-                        </span>
-                      </div>
-                    ))}
+                        {t("map.tapToSelect")}
+                      </p>
+                    )}
                   </div>
-                  {selectedForRoute.length >= 2 && (
-                    <div style={{ padding: "var(--space-md) var(--space-lg)" }}>
-                      {/* 順序モード */}
-                      <p
-                        style={{
-                          margin: "0 0 var(--space-xs)",
-                          fontSize: "var(--font-size-xs)",
-                          fontWeight: "500",
-                          color: "var(--color-text-sub)",
-                        }}
-                      >
-                        {t("route.orderLabel")}
-                      </p>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "4px",
-                          marginBottom: "var(--space-md)",
-                        }}
-                      >
-                        {(
-                          [
-                            ["auto", t("route.orderAuto")],
-                            ["manual", t("route.orderManual")],
-                          ] as [typeof orderMode, string][]
-                        ).map(([mode, label]) => (
-                          <button
-                            key={mode}
-                            onClick={() => setOrderMode(mode)}
-                            style={{
-                              flex: 1,
-                              padding: "5px 0",
-                              fontSize: "var(--font-size-xs)",
-                              borderRadius: "var(--radius-sm)",
-                              border:
-                                orderMode === mode
-                                  ? "0.5px solid var(--color-primary)"
-                                  : "0.5px solid var(--color-border)",
-                              background:
-                                orderMode === mode
-                                  ? "var(--color-primary-light)"
-                                  : "var(--color-card)",
-                              color:
-                                orderMode === mode
-                                  ? "var(--color-primary)"
-                                  : "var(--color-text-sub)",
-                              cursor: "pointer",
-                            }}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* 移動手段 */}
-                      <p
-                        style={{
-                          margin: "0 0 var(--space-xs)",
-                          fontSize: "var(--font-size-xs)",
-                          fontWeight: "500",
-                          color: "var(--color-text-sub)",
-                        }}
-                      >
-                        {t("route.transport")}
-                      </p>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "4px",
-                          marginBottom: "var(--space-sm)",
-                        }}
-                      >
-                        {(["car", "walk", "transit"] as TransportMode[]).map(
-                          (mode) => (
-                            <button
-                              key={mode}
-                              onClick={() => setTransportMode(mode)}
-                              style={{
-                                flex: 1,
-                                padding: "5px 0",
-                                fontSize: "var(--font-size-xs)",
-                                borderRadius: "var(--radius-sm)",
-                                border:
-                                  transportMode === mode
-                                    ? "0.5px solid var(--color-primary)"
-                                    : "0.5px solid var(--color-border)",
-                                background:
-                                  transportMode === mode
-                                    ? "var(--color-primary-light)"
-                                    : "var(--color-card)",
-                                color:
-                                  transportMode === mode
-                                    ? "var(--color-primary)"
-                                    : "var(--color-text-sub)",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {t(`route.${mode}`)}
-                            </button>
-                          ),
-                        )}
-                      </div>
-
-                      {/* 有料道路 */}
-                      {transportMode === "car" && (
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            fontSize: "var(--font-size-xs)",
-                            color: "var(--color-text-sub)",
-                            marginBottom: "var(--space-sm)",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={useTolls}
-                            onChange={(e) => setUseTolls(e.target.checked)}
-                          />
-                          {t("route.useTolls")}
-                        </label>
-                      )}
-
-                      {/* 出発日時（公共交通機関） */}
-                      {transportMode === "transit" && (
-                        <div style={{ marginBottom: "var(--space-sm)" }}>
-                          <p
-                            style={{
-                              margin: "0 0 var(--space-xs)",
-                              fontSize: "var(--font-size-xs)",
-                              color: "var(--color-text-sub)",
-                            }}
-                          >
-                            {t("route.departureTime")}
-                          </p>
-                          <input
-                            type="datetime-local"
-                            value={departureDateTime}
-                            onChange={(e) =>
-                              setDepartureDateTime(e.target.value)
-                            }
-                            style={{
-                              width: "100%",
-                              padding: "6px",
-                              fontSize: "var(--font-size-xs)",
-                              borderRadius: "var(--radius-sm)",
-                              border: "0.5px solid var(--color-border)",
-                              background: "var(--color-card)",
-                              color: "var(--color-text-main)",
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      {/* 利用可能時間 */}
-                      <p
-                        style={{
-                          margin: "0 0 var(--space-xs)",
-                          fontSize: "var(--font-size-xs)",
-                          color: "var(--color-text-sub)",
-                        }}
-                      >
-                        {t("route.availableTime")}：
-                        <strong style={{ color: "var(--color-text-main)" }}>
-                          {Math.floor(availableMinutes / 60)}
-                          {t("route.hours")}
-                          {availableMinutes % 60 > 0
-                            ? `${availableMinutes % 60}${t("route.minutes")}`
-                            : ""}
-                        </strong>
-                      </p>
-                      <input
-                        type="range"
-                        min={60}
-                        max={600}
-                        step={30}
-                        value={availableMinutes}
-                        onChange={(e) =>
-                          setAvailableMinutes(Number(e.target.value))
-                        }
-                        style={{
-                          width: "100%",
-                          marginBottom: "var(--space-md)",
-                          accentColor: "var(--color-primary)",
-                        }}
-                      />
-
-                      {genError && (
-                        <p
-                          style={{
-                            color: "var(--color-error)",
-                            fontSize: "var(--font-size-xs)",
-                            margin: "0 0 var(--space-sm)",
-                          }}
-                        >
-                          {genError}
-                        </p>
-                      )}
-
-                      <button
-                        onClick={handleGenerateRoute}
-                        disabled={generating}
-                        style={{
-                          width: "100%",
-                          padding: "8px",
-                          background: generating
-                            ? "var(--color-border)"
-                            : "var(--color-primary)",
-                          color: "var(--color-white)",
-                          border: "none",
-                          borderRadius: "var(--radius-sm)",
-                          cursor: generating ? "not-allowed" : "pointer",
-                          fontWeight: "500",
-                          fontSize: "var(--font-size-sm)",
-                        }}
-                      >
-                        {generating
-                          ? t("route.generating")
-                          : t("route.generate")}
-                      </button>
-                    </div>
-                  )}
-                </>
-              );
-
-              if (isMobile) {
-                return (
-                  <BottomSheet
-                    isOpen={true}
-                    onClose={() => setRouteMode(false)}
-                    snap={routeSheetSnap}
-                    onSnapChange={setRouteSheetSnap}
-                    zIndex={6}
-                    header={summarySection}
-                  >
-                    {detailSection}
-                  </BottomSheet>
                 );
-              }
 
-              return (
-                <div
-                  style={{
-                    background: "var(--color-card)",
-                    borderRadius: "var(--radius-md)",
-                    boxShadow: "var(--shadow-md)",
-                    borderTop: "2px solid var(--color-primary)",
-                    minWidth: "220px",
-                    overflow: "hidden",
-                  }}
-                >
-                  {summarySection}
-                  {detailSection}
-                </div>
-              );
-            })()}
-
-          {/* ルート結果表示 */}
-          {routeResult &&
-            (() => {
-              const summarySection = (
-                <div
-                  style={{
-                    padding: "var(--space-md) var(--space-lg)",
-                    borderBottom: isMobile
-                      ? "none"
-                      : "0.5px solid var(--color-border-light)",
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: "0 0 var(--space-xs)",
-                      fontWeight: "500",
-                      fontSize: "var(--font-size-sm)",
-                      color: "var(--color-text-main)",
-                    }}
-                  >
-                    {t("result.title")}
-                  </p>
-                  <div
-                    style={{
-                      padding: "var(--space-sm) var(--space-md)",
-                      borderRadius: "var(--radius-sm)",
-                      background: isOverTime
-                        ? "var(--color-warning-light)"
-                        : "var(--color-success-light)",
-                      fontSize: "var(--font-size-xs)",
-                      color: isOverTime
-                        ? "var(--color-warning)"
-                        : "var(--color-success)",
-                    }}
-                  >
-                    {t(`route.${transportMode}`)} ・ {t("route.total")}{" "}
-                    <strong>
-                      {Math.floor(routeResult.totalMin / 60)}
-                      {t("route.hours")}
-                      {routeResult.totalMin % 60}
-                      {t("route.minutes")}
-                    </strong>
-                    {isOverTime && <div>⚠️ {t("result.overTime")}</div>}
-                  </div>
-                </div>
-              );
-
-              const detailSection = (
-                <>
-                  <div
-                    style={{
-                      padding: "var(--space-md) var(--space-lg)",
-                      maxHeight: isMobile ? "none" : "40vh",
-                      overflowY: isMobile ? "visible" : "auto",
-                    }}
-                  >
-                    {routeResult.orderedSpots.map((spot, i) => (
-                      <div
-                        key={spot.id}
-                        style={{
-                          fontSize: "var(--font-size-xs)",
-                          marginBottom: "var(--space-xs)",
-                        }}
-                      >
-                        {i > 0 && (
-                          <div
-                            style={{
-                              paddingLeft: "20px",
-                              marginBottom: "var(--space-xs)",
-                            }}
-                          >
-                            {transportMode === "transit" ? (
-                              transitLegs[i - 1] ? (
-                                <div
-                                  style={{
-                                    background: "var(--color-bg)",
-                                    borderRadius: "var(--radius-sm)",
-                                    padding: "6px 8px",
-                                    fontSize: "11px",
-                                    color: "var(--color-text-sub)",
-                                  }}
-                                >
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "space-between",
-                                      marginBottom: "2px",
-                                    }}
-                                  >
-                                    <span>
-                                      🚃{" "}
-                                      {secsToTimeStr(
-                                        transitLegs[i - 1]!.departureSecs,
-                                      )}{" "}
-                                      発 →{" "}
-                                      {secsToTimeStr(
-                                        transitLegs[i - 1]!.arrivalSecs,
-                                      )}{" "}
-                                      着
-                                      {transitLegs[i - 1]!.transferCount > 0 &&
-                                        ` （乗換${transitLegs[i - 1]!.transferCount}回）`}
-                                    </span>
-                                    <button
-                                      onClick={() => handleEditLeg(i - 1)}
-                                      style={{
-                                        fontSize: "10px",
-                                        padding: "2px 6px",
-                                        border:
-                                          "0.5px solid var(--color-primary)",
-                                        background: "var(--color-card)",
-                                        color: "var(--color-primary)",
-                                        borderRadius: "var(--radius-sm)",
-                                        cursor: "pointer",
-                                      }}
-                                    >
-                                      🔄
-                                    </button>
-                                  </div>
-                                  {transitLegs[i - 1]!.accessWalkSecs ? (
-                                    <div
-                                      style={{
-                                        color: "var(--color-text-muted)",
-                                        fontSize: "10px",
-                                      }}
-                                    >
-                                      🚶 最寄り駅まで徒歩
-                                      {Math.round(
-                                        transitLegs[i - 1]!.accessWalkSecs! /
-                                          60,
-                                      )}
-                                      分
-                                    </div>
-                                  ) : null}
-                                  {transitLegs[i - 1]!.legs.filter(
-                                    (l) => l.kind === "transit",
-                                  ).map((leg, li) => (
-                                    <div
-                                      key={li}
-                                      style={{
-                                        color: "var(--color-text-muted)",
-                                        fontSize: "10px",
-                                      }}
-                                    >
-                                      {leg.routeName ?? leg.mode}{" "}
-                                      {leg.from.name}→{leg.to.name}
-                                    </div>
-                                  ))}
-                                  {transitLegs[i - 1]!.egressWalkSecs ? (
-                                    <div
-                                      style={{
-                                        color: "var(--color-text-muted)",
-                                        fontSize: "10px",
-                                      }}
-                                    >
-                                      🚶 駅から目的地まで徒歩
-                                      {Math.round(
-                                        transitLegs[i - 1]!.egressWalkSecs! /
-                                          60,
-                                      )}
-                                      分
-                                    </div>
-                                  ) : null}
-                                </div>
-                              ) : (
-                                <div
-                                  style={{
-                                    background: "var(--color-warning-light)",
-                                    borderRadius: "var(--radius-sm)",
-                                    padding: "6px 8px",
-                                    fontSize: "11px",
-                                    color: "var(--color-warning)",
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <span>⚠️ ルートが見つかりません</span>
-                                  <button
-                                    onClick={() => handleEditLeg(i - 1)}
-                                    style={{
-                                      fontSize: "10px",
-                                      padding: "2px 6px",
-                                      border:
-                                        "0.5px solid var(--color-warning)",
-                                      background: "var(--color-card)",
-                                      color: "var(--color-warning)",
-                                      borderRadius: "var(--radius-sm)",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    🔄
-                                  </button>
-                                </div>
-                              )
-                            ) : (
-                              <div
-                                style={{
-                                  color: "var(--color-text-muted)",
-                                  fontSize: "11px",
-                                }}
-                              >
-                                {t(`route.${transportMode}`)}{" "}
-                                {t("result.travelTime")}
-                                {routeResult.legs[i - 1]?.minutes}
-                                {t("route.minutes")}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                const detailSection = (
+                  <>
+                    {/* 選択スポット一覧 */}
+                    <div
+                      style={{
+                        padding: "var(--space-md) var(--space-lg)",
+                        borderBottom: "0.5px solid var(--color-border-light)",
+                      }}
+                    >
+                      {selectedForRoute.map((spot, i) => (
                         <div
+                          key={spot.id}
                           style={{
+                            fontSize: "var(--font-size-xs)",
+                            padding: "6px 0",
+                            borderBottom:
+                              "0.5px solid var(--color-border-light)",
                             display: "flex",
                             alignItems: "center",
                             gap: "6px",
@@ -1726,9 +1198,9 @@ export default function MapPage() {
                             style={{
                               width: "18px",
                               height: "18px",
+                              borderRadius: "50%",
                               background: "var(--color-primary)",
                               color: "var(--color-white)",
-                              borderRadius: "50%",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -1739,348 +1211,907 @@ export default function MapPage() {
                             {i + 1}
                           </span>
                           <span
-                            style={{
-                              flex: 1,
-                              color: "var(--color-text-main)",
-                              fontWeight: "500",
-                            }}
+                            style={{ flex: 1, color: "var(--color-text-main)" }}
                           >
                             {isEn ? (spot.name_en ?? spot.name) : spot.name}
                           </span>
+                          <input
+                            type="number"
+                            value={getDurationForSpot(spot)}
+                            onChange={(e) => {
+                              const newVal = Number(e.target.value);
+                              setUserDurations((prev) => ({
+                                ...prev,
+                                [spot.id]: newVal,
+                              }));
+                            }}
+                            onBlur={async (e) => {
+                              if (!user) return;
+                              const newVal = Number(e.target.value);
+                              await supabase.from("user_spot_durations").upsert(
+                                {
+                                  user_id: user.id,
+                                  spot_id: spot.id,
+                                  duration_min: newVal,
+                                },
+                                { onConflict: "user_id,spot_id" },
+                              );
+                            }}
+                            style={{
+                              width: "36px",
+                              fontSize: "10px",
+                              padding: "2px",
+                              textAlign: "right",
+                              border: "0.5px solid var(--color-border)",
+                              borderRadius: "var(--radius-sm)",
+                            }}
+                          />
                           <span
                             style={{
-                              fontSize: "11px",
+                              fontSize: "10px",
                               color: "var(--color-text-muted)",
                             }}
                           >
-                            ⏱ {getDurationForSpot(spot)}
                             {t("route.minutes")}
                           </span>
+                          <span
+                            onClick={() => handleMarkerClickForRoute(spot)}
+                            style={{
+                              cursor: "pointer",
+                              color: "var(--color-primary)",
+                              fontSize: "12px",
+                            }}
+                          >
+                            ✕
+                          </span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                    {selectedForRoute.length >= 2 && (
+                      <div
+                        style={{ padding: "var(--space-md) var(--space-lg)" }}
+                      >
+                        {/* 順序モード */}
+                        <p
+                          style={{
+                            margin: "0 0 var(--space-xs)",
+                            fontSize: "var(--font-size-xs)",
+                            fontWeight: "500",
+                            color: "var(--color-text-sub)",
+                          }}
+                        >
+                          {t("route.orderLabel")}
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "4px",
+                            marginBottom: "var(--space-md)",
+                          }}
+                        >
+                          {(
+                            [
+                              ["auto", t("route.orderAuto")],
+                              ["manual", t("route.orderManual")],
+                            ] as [typeof orderMode, string][]
+                          ).map(([mode, label]) => (
+                            <button
+                              key={mode}
+                              onClick={() => setOrderMode(mode)}
+                              style={{
+                                flex: 1,
+                                padding: "5px 0",
+                                fontSize: "var(--font-size-xs)",
+                                borderRadius: "var(--radius-sm)",
+                                border:
+                                  orderMode === mode
+                                    ? "0.5px solid var(--color-primary)"
+                                    : "0.5px solid var(--color-border)",
+                                background:
+                                  orderMode === mode
+                                    ? "var(--color-primary-light)"
+                                    : "var(--color-card)",
+                                color:
+                                  orderMode === mode
+                                    ? "var(--color-primary)"
+                                    : "var(--color-text-sub)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
 
-                  {/* ルート保存 */}
-                  {currentRouteId && (
+                        {/* 移動手段 */}
+                        <p
+                          style={{
+                            margin: "0 0 var(--space-xs)",
+                            fontSize: "var(--font-size-xs)",
+                            fontWeight: "500",
+                            color: "var(--color-text-sub)",
+                          }}
+                        >
+                          {t("route.transport")}
+                        </p>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "4px",
+                            marginBottom: "var(--space-sm)",
+                          }}
+                        >
+                          {(["car", "walk", "transit"] as TransportMode[]).map(
+                            (mode) => (
+                              <button
+                                key={mode}
+                                onClick={() => setTransportMode(mode)}
+                                style={{
+                                  flex: 1,
+                                  padding: "5px 0",
+                                  fontSize: "var(--font-size-xs)",
+                                  borderRadius: "var(--radius-sm)",
+                                  border:
+                                    transportMode === mode
+                                      ? "0.5px solid var(--color-primary)"
+                                      : "0.5px solid var(--color-border)",
+                                  background:
+                                    transportMode === mode
+                                      ? "var(--color-primary-light)"
+                                      : "var(--color-card)",
+                                  color:
+                                    transportMode === mode
+                                      ? "var(--color-primary)"
+                                      : "var(--color-text-sub)",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {t(`route.${mode}`)}
+                              </button>
+                            ),
+                          )}
+                        </div>
+
+                        {/* 有料道路 */}
+                        {transportMode === "car" && (
+                          <label
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              fontSize: "var(--font-size-xs)",
+                              color: "var(--color-text-sub)",
+                              marginBottom: "var(--space-sm)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={useTolls}
+                              onChange={(e) => setUseTolls(e.target.checked)}
+                            />
+                            {t("route.useTolls")}
+                          </label>
+                        )}
+
+                        {/* 出発日時（公共交通機関） */}
+                        {transportMode === "transit" && (
+                          <div style={{ marginBottom: "var(--space-sm)" }}>
+                            <p
+                              style={{
+                                margin: "0 0 var(--space-xs)",
+                                fontSize: "var(--font-size-xs)",
+                                color: "var(--color-text-sub)",
+                              }}
+                            >
+                              {t("route.departureTime")}
+                            </p>
+                            <input
+                              type="datetime-local"
+                              value={departureDateTime}
+                              onChange={(e) =>
+                                setDepartureDateTime(e.target.value)
+                              }
+                              style={{
+                                width: "100%",
+                                padding: "6px",
+                                fontSize: "var(--font-size-xs)",
+                                borderRadius: "var(--radius-sm)",
+                                border: "0.5px solid var(--color-border)",
+                                background: "var(--color-card)",
+                                color: "var(--color-text-main)",
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* 利用可能時間 */}
+                        <p
+                          style={{
+                            margin: "0 0 var(--space-xs)",
+                            fontSize: "var(--font-size-xs)",
+                            color: "var(--color-text-sub)",
+                          }}
+                        >
+                          {t("route.availableTime")}：
+                          <strong style={{ color: "var(--color-text-main)" }}>
+                            {Math.floor(availableMinutes / 60)}
+                            {t("route.hours")}
+                            {availableMinutes % 60 > 0
+                              ? `${availableMinutes % 60}${t("route.minutes")}`
+                              : ""}
+                          </strong>
+                        </p>
+                        <input
+                          type="range"
+                          min={60}
+                          max={600}
+                          step={30}
+                          value={availableMinutes}
+                          onChange={(e) =>
+                            setAvailableMinutes(Number(e.target.value))
+                          }
+                          style={{
+                            width: "100%",
+                            marginBottom: "var(--space-md)",
+                            accentColor: "var(--color-primary)",
+                          }}
+                        />
+
+                        {genError && (
+                          <p
+                            style={{
+                              color: "var(--color-error)",
+                              fontSize: "var(--font-size-xs)",
+                              margin: "0 0 var(--space-sm)",
+                            }}
+                          >
+                            {genError}
+                          </p>
+                        )}
+
+                        <button
+                          onClick={handleGenerateRoute}
+                          disabled={generating}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            background: generating
+                              ? "var(--color-border)"
+                              : "var(--color-primary)",
+                            color: "var(--color-white)",
+                            border: "none",
+                            borderRadius: "var(--radius-sm)",
+                            cursor: generating ? "not-allowed" : "pointer",
+                            fontWeight: "500",
+                            fontSize: "var(--font-size-sm)",
+                          }}
+                        >
+                          {generating
+                            ? t("route.generating")
+                            : t("route.generate")}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                );
+
+                if (isMobile) {
+                  return (
+                    <BottomSheet
+                      isOpen={true}
+                      onClose={() => setRouteMode(false)}
+                      snap={routeSheetSnap}
+                      onSnapChange={setRouteSheetSnap}
+                      zIndex={6}
+                      header={summarySection}
+                    >
+                      {detailSection}
+                    </BottomSheet>
+                  );
+                }
+
+                return (
+                  <div
+                    style={{
+                      background: "var(--color-card)",
+                      borderRadius: "var(--radius-md)",
+                      boxShadow: "var(--shadow-md)",
+                      borderTop: "2px solid var(--color-primary)",
+                      minWidth: "220px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {summarySection}
+                    {detailSection}
+                  </div>
+                );
+              })()}
+
+            {/* ルート結果表示 */}
+            {routeResult &&
+              (() => {
+                const summarySection = (
+                  <div
+                    style={{
+                      padding: "var(--space-md) var(--space-lg)",
+                      borderBottom: isMobile
+                        ? "none"
+                        : "0.5px solid var(--color-border-light)",
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: "0 0 var(--space-xs)",
+                        fontWeight: "500",
+                        fontSize: "var(--font-size-sm)",
+                        color: "var(--color-text-main)",
+                      }}
+                    >
+                      {t("result.title")}
+                    </p>
+                    <div
+                      style={{
+                        padding: "var(--space-sm) var(--space-md)",
+                        borderRadius: "var(--radius-sm)",
+                        background: isOverTime
+                          ? "var(--color-warning-light)"
+                          : "var(--color-success-light)",
+                        fontSize: "var(--font-size-xs)",
+                        color: isOverTime
+                          ? "var(--color-warning)"
+                          : "var(--color-success)",
+                      }}
+                    >
+                      {t(`route.${transportMode}`)} ・ {t("route.total")}{" "}
+                      <strong>
+                        {Math.floor(routeResult.totalMin / 60)}
+                        {t("route.hours")}
+                        {routeResult.totalMin % 60}
+                        {t("route.minutes")}
+                      </strong>
+                      {isOverTime && <div>⚠️ {t("result.overTime")}</div>}
+                    </div>
+                  </div>
+                );
+
+                const detailSection = (
+                  <>
                     <div
                       style={{
                         padding: "var(--space-md) var(--space-lg)",
-                        borderTop: "0.5px solid var(--color-border-light)",
-                        background: "var(--color-bg)",
+                        maxHeight: isMobile ? "none" : "40vh",
+                        overflowY: isMobile ? "visible" : "auto",
                       }}
                     >
-                      <p
+                      {routeResult.orderedSpots.map((spot, i) => (
+                        <div
+                          key={spot.id}
+                          style={{
+                            fontSize: "var(--font-size-xs)",
+                            marginBottom: "var(--space-xs)",
+                          }}
+                        >
+                          {i > 0 && (
+                            <div
+                              style={{
+                                paddingLeft: "20px",
+                                marginBottom: "var(--space-xs)",
+                              }}
+                            >
+                              {transportMode === "transit" ? (
+                                transitLegs[i - 1] ? (
+                                  <div
+                                    style={{
+                                      background: "var(--color-bg)",
+                                      borderRadius: "var(--radius-sm)",
+                                      padding: "6px 8px",
+                                      fontSize: "11px",
+                                      color: "var(--color-text-sub)",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginBottom: "2px",
+                                      }}
+                                    >
+                                      <span>
+                                        🚃{" "}
+                                        {secsToTimeStr(
+                                          transitLegs[i - 1]!.departureSecs,
+                                        )}{" "}
+                                        発 →{" "}
+                                        {secsToTimeStr(
+                                          transitLegs[i - 1]!.arrivalSecs,
+                                        )}{" "}
+                                        着
+                                        {transitLegs[i - 1]!.transferCount >
+                                          0 &&
+                                          ` （乗換${transitLegs[i - 1]!.transferCount}回）`}
+                                      </span>
+                                      <button
+                                        onClick={() => handleEditLeg(i - 1)}
+                                        style={{
+                                          fontSize: "10px",
+                                          padding: "2px 6px",
+                                          border:
+                                            "0.5px solid var(--color-primary)",
+                                          background: "var(--color-card)",
+                                          color: "var(--color-primary)",
+                                          borderRadius: "var(--radius-sm)",
+                                          cursor: "pointer",
+                                        }}
+                                      >
+                                        🔄
+                                      </button>
+                                    </div>
+                                    {transitLegs[i - 1]!.accessWalkSecs ? (
+                                      <div
+                                        style={{
+                                          color: "var(--color-text-muted)",
+                                          fontSize: "10px",
+                                        }}
+                                      >
+                                        🚶 最寄り駅まで徒歩
+                                        {Math.round(
+                                          transitLegs[i - 1]!.accessWalkSecs! /
+                                            60,
+                                        )}
+                                        分
+                                      </div>
+                                    ) : null}
+                                    {transitLegs[i - 1]!.legs.filter(
+                                      (l) => l.kind === "transit",
+                                    ).map((leg, li) => (
+                                      <div
+                                        key={li}
+                                        style={{
+                                          color: "var(--color-text-muted)",
+                                          fontSize: "10px",
+                                        }}
+                                      >
+                                        {leg.routeName ?? leg.mode}{" "}
+                                        {leg.from.name}→{leg.to.name}
+                                      </div>
+                                    ))}
+                                    {transitLegs[i - 1]!.egressWalkSecs ? (
+                                      <div
+                                        style={{
+                                          color: "var(--color-text-muted)",
+                                          fontSize: "10px",
+                                        }}
+                                      >
+                                        🚶 駅から目的地まで徒歩
+                                        {Math.round(
+                                          transitLegs[i - 1]!.egressWalkSecs! /
+                                            60,
+                                        )}
+                                        分
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : (
+                                  <div
+                                    style={{
+                                      background: "var(--color-warning-light)",
+                                      borderRadius: "var(--radius-sm)",
+                                      padding: "6px 8px",
+                                      fontSize: "11px",
+                                      color: "var(--color-warning)",
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <span>⚠️ ルートが見つかりません</span>
+                                    <button
+                                      onClick={() => handleEditLeg(i - 1)}
+                                      style={{
+                                        fontSize: "10px",
+                                        padding: "2px 6px",
+                                        border:
+                                          "0.5px solid var(--color-warning)",
+                                        background: "var(--color-card)",
+                                        color: "var(--color-warning)",
+                                        borderRadius: "var(--radius-sm)",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      🔄
+                                    </button>
+                                  </div>
+                                )
+                              ) : (
+                                <div
+                                  style={{
+                                    color: "var(--color-text-muted)",
+                                    fontSize: "11px",
+                                  }}
+                                >
+                                  {t(`route.${transportMode}`)}{" "}
+                                  {t("result.travelTime")}
+                                  {routeResult.legs[i - 1]?.minutes}
+                                  {t("route.minutes")}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: "18px",
+                                height: "18px",
+                                background: "var(--color-primary)",
+                                color: "var(--color-white)",
+                                borderRadius: "50%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "10px",
+                                flexShrink: 0,
+                              }}
+                            >
+                              {i + 1}
+                            </span>
+                            <span
+                              style={{
+                                flex: 1,
+                                color: "var(--color-text-main)",
+                                fontWeight: "500",
+                              }}
+                            >
+                              {isEn ? (spot.name_en ?? spot.name) : spot.name}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "var(--color-text-muted)",
+                              }}
+                            >
+                              ⏱ {getDurationForSpot(spot)}
+                              {t("route.minutes")}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ルート保存 */}
+                    {currentRouteId && (
+                      <div
                         style={{
-                          margin: "0 0 var(--space-xs)",
+                          padding: "var(--space-md) var(--space-lg)",
+                          borderTop: "0.5px solid var(--color-border-light)",
+                          background: "var(--color-bg)",
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: "0 0 var(--space-xs)",
+                            fontSize: "var(--font-size-xs)",
+                            color: "var(--color-text-sub)",
+                          }}
+                        >
+                          {t("route.saveRoute")}
+                        </p>
+                        <div style={{ display: "flex", gap: "6px" }}>
+                          <input
+                            type="text"
+                            value={routeNameInput}
+                            onChange={(e) => setRouteNameInput(e.target.value)}
+                            placeholder={t("route.routeNamePlaceholder")}
+                            style={{
+                              flex: 1,
+                              padding: "6px",
+                              fontSize: "var(--font-size-xs)",
+                              borderRadius: "var(--radius-sm)",
+                              border: "0.5px solid var(--color-border)",
+                              background: "var(--color-card)",
+                            }}
+                          />
+                          <button
+                            onClick={handleSaveRoute}
+                            disabled={savingRoute || !routeNameInput.trim()}
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: "var(--font-size-xs)",
+                              background: routeNameInput.trim()
+                                ? "var(--color-primary)"
+                                : "var(--color-border)",
+                              color: "var(--color-white)",
+                              border: "none",
+                              borderRadius: "var(--radius-sm)",
+                              cursor: routeNameInput.trim()
+                                ? "pointer"
+                                : "not-allowed",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            💾 {t("route.save")}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ padding: "var(--space-sm) var(--space-lg)" }}>
+                      <button
+                        onClick={() => setRouteResult(null)}
+                        style={{
+                          width: "100%",
+                          padding: "6px",
+                          background: "var(--color-card)",
+                          border: "0.5px solid var(--color-border)",
+                          borderRadius: "var(--radius-sm)",
+                          cursor: "pointer",
                           fontSize: "var(--font-size-xs)",
                           color: "var(--color-text-sub)",
                         }}
                       >
-                        {t("route.saveRoute")}
-                      </p>
-                      <div style={{ display: "flex", gap: "6px" }}>
-                        <input
-                          type="text"
-                          value={routeNameInput}
-                          onChange={(e) => setRouteNameInput(e.target.value)}
-                          placeholder={t("route.routeNamePlaceholder")}
-                          style={{
-                            flex: 1,
-                            padding: "6px",
-                            fontSize: "var(--font-size-xs)",
-                            borderRadius: "var(--radius-sm)",
-                            border: "0.5px solid var(--color-border)",
-                            background: "var(--color-card)",
-                          }}
-                        />
-                        <button
-                          onClick={handleSaveRoute}
-                          disabled={savingRoute || !routeNameInput.trim()}
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: "var(--font-size-xs)",
-                            background: routeNameInput.trim()
-                              ? "var(--color-primary)"
-                              : "var(--color-border)",
-                            color: "var(--color-white)",
-                            border: "none",
-                            borderRadius: "var(--radius-sm)",
-                            cursor: routeNameInput.trim()
-                              ? "pointer"
-                              : "not-allowed",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          💾 {t("route.save")}
-                        </button>
-                      </div>
+                        {t("result.changeCondition")}
+                      </button>
                     </div>
-                  )}
-
-                  <div style={{ padding: "var(--space-sm) var(--space-lg)" }}>
-                    <button
-                      onClick={() => setRouteResult(null)}
-                      style={{
-                        width: "100%",
-                        padding: "6px",
-                        background: "var(--color-card)",
-                        border: "0.5px solid var(--color-border)",
-                        borderRadius: "var(--radius-sm)",
-                        cursor: "pointer",
-                        fontSize: "var(--font-size-xs)",
-                        color: "var(--color-text-sub)",
-                      }}
-                    >
-                      {t("result.changeCondition")}
-                    </button>
-                  </div>
-                </>
-              );
-
-              if (isMobile) {
-                return (
-                  <BottomSheet
-                    isOpen={true}
-                    onClose={() => setRouteResult(null)}
-                    snap={routeSheetSnap}
-                    onSnapChange={setRouteSheetSnap}
-                    zIndex={6}
-                    header={summarySection}
-                  >
-                    {detailSection}
-                  </BottomSheet>
+                  </>
                 );
-              }
 
-              return (
-                <div
-                  style={{
-                    background: "var(--color-card)",
-                    borderRadius: "var(--radius-md)",
-                    boxShadow: "var(--shadow-md)",
-                    borderTop: "2px solid var(--color-primary)",
-                    minWidth: "220px",
-                    overflow: "hidden",
-                  }}
-                >
-                  {summarySection}
-                  {detailSection}
-                </div>
-              );
-            })()}
-        </div>
-      )}
+                if (isMobile) {
+                  return (
+                    <BottomSheet
+                      isOpen={true}
+                      onClose={() => setRouteResult(null)}
+                      snap={routeSheetSnap}
+                      onSnapChange={setRouteSheetSnap}
+                      zIndex={6}
+                      header={summarySection}
+                    >
+                      {detailSection}
+                    </BottomSheet>
+                  );
+                }
 
-      <Map
-        ref={mapRef}
-        mapboxAccessToken={MAPBOX_TOKEN}
-        initialViewState={{ longitude: 130.2988, latitude: 33.2494, zoom: 9 }}
-        style={{ width: "100%", height: "100%" }}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-      >
-        {/* ルートの線 */}
-        {routeGeoJSON && (
-          <Source id="route" type="geojson" data={routeGeoJSON}>
-            <Layer
-              id="route-line"
-              type="line"
-              paint={{
-                "line-color": "#2196F3",
-                "line-width": 5,
-                "line-opacity": 0.8,
-              }}
-              layout={{ "line-cap": "round", "line-join": "round" }}
-            />
-          </Source>
+                return (
+                  <div
+                    style={{
+                      background: "var(--color-card)",
+                      borderRadius: "var(--radius-md)",
+                      boxShadow: "var(--shadow-md)",
+                      borderTop: "2px solid var(--color-primary)",
+                      minWidth: "220px",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {summarySection}
+                    {detailSection}
+                  </div>
+                );
+              })()}
+          </div>
         )}
 
-        {spots.map((spot) => {
-          const matched = matchesFilter(spot);
-          return (
-            <Marker
-              key={spot.id}
-              longitude={spot.lng}
-              latitude={spot.lat}
-              anchor="bottom"
-              onClick={(e) => {
-                e.originalEvent.stopPropagation();
-                if (!matched) return; // フィルタ非一致は操作不可
-                if (routeMode) {
-                  if (!routeResult) handleMarkerClickForRoute(spot);
-                } else {
-                  setSelectedSpot(spot);
-                }
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "18px",
-                  cursor: matched ? "pointer" : "default",
-                  filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.3))",
-                  opacity: matched ? 1 : 0.25,
+        <Map
+          ref={mapRef}
+          mapboxAccessToken={MAPBOX_TOKEN}
+          initialViewState={{ longitude: 130.2988, latitude: 33.2494, zoom: 9 }}
+          style={{ width: "100%", height: "100%" }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+        >
+          {/* ルートの線 */}
+          {routeGeoJSON && (
+            <Source id="route" type="geojson" data={routeGeoJSON}>
+              <Layer
+                id="route-line"
+                type="line"
+                paint={{
+                  "line-color": "#2196F3",
+                  "line-width": 5,
+                  "line-opacity": 0.8,
+                }}
+                layout={{ "line-cap": "round", "line-join": "round" }}
+              />
+            </Source>
+          )}
+
+          {spots.map((spot) => {
+            const matched = matchesFilter(spot);
+            return (
+              <Marker
+                key={spot.id}
+                longitude={spot.lng}
+                latitude={spot.lat}
+                anchor="bottom"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  if (!matched) return; // フィルタ非一致は操作不可
+                  if (routeMode) {
+                    if (!routeResult) handleMarkerClickForRoute(spot);
+                  } else {
+                    setSelectedSpot(spot);
+                  }
                 }}
               >
-                {getMarkerEmoji(spot)}
-              </div>
-            </Marker>
-          );
-        })}
+                <div
+                  style={{
+                    fontSize: "18px",
+                    cursor: matched ? "pointer" : "default",
+                    filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.3))",
+                    opacity: matched ? 1 : 0.25,
+                  }}
+                >
+                  {getMarkerEmoji(spot)}
+                </div>
+              </Marker>
+            );
+          })}
 
-        {!routeMode && selectedSpot && (
-          <Popup
-            longitude={selectedSpot.lng}
-            latitude={selectedSpot.lat}
-            anchor="top"
-            onClose={() => setSelectedSpot(null)}
-            maxWidth="300px"
-          >
-            <SpotDetailPopup
-              spot={selectedSpot}
-              areaName={(() => {
-                const a = areas.find((a) => a.id === selectedSpot.area_id);
-                return (isEn ? (a?.name_en ?? a?.name) : a?.name) ?? "";
-              })()}
-              categoryName={(() => {
-                const c = categories.find(
-                  (c) => c.id === selectedSpot.category_id,
-                );
-                return (isEn ? (c?.name_en ?? c?.name) : c?.name) ?? "";
-              })()}
-              isSacred={isSpotSacred(selectedSpot)}
-              tags={significanceTags.filter((t) =>
-                spotTags.some(
-                  (st) => st.spot_id === selectedSpot.id && st.tag_id === t.id,
-                ),
-              )}
-              checkedIn={selectedSpot.id in checkedInSpots}
-              isFavorite={checkedInSpots[selectedSpot.id] ?? false}
-              checkingIn={checkingIn}
-              canCheckin={!!user}
-              onCheckin={() => handleCheckin(selectedSpot)}
-              onUnCheckin={() => handleUnCheckin(selectedSpot)}
-              onToggleFavorite={() => handleToggleFavorite(selectedSpot)}
-            />
-          </Popup>
-        )}
-      </Map>
-      {/* 候補選択モーダル */}
-      {editingLegIndex !== null && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
+          {!routeMode && selectedSpot && (
+            <Popup
+              longitude={selectedSpot.lng}
+              latitude={selectedSpot.lat}
+              anchor="top"
+              onClose={() => setSelectedSpot(null)}
+              maxWidth="300px"
+            >
+              <SpotDetailPopup
+                spot={selectedSpot}
+                areaName={(() => {
+                  const a = areas.find((a) => a.id === selectedSpot.area_id);
+                  return (isEn ? (a?.name_en ?? a?.name) : a?.name) ?? "";
+                })()}
+                categoryName={(() => {
+                  const c = categories.find(
+                    (c) => c.id === selectedSpot.category_id,
+                  );
+                  return (isEn ? (c?.name_en ?? c?.name) : c?.name) ?? "";
+                })()}
+                isSacred={isSpotSacred(selectedSpot)}
+                tags={significanceTags.filter((t) =>
+                  spotTags.some(
+                    (st) =>
+                      st.spot_id === selectedSpot.id && st.tag_id === t.id,
+                  ),
+                )}
+                checkedIn={selectedSpot.id in checkedInSpots}
+                isFavorite={checkedInSpots[selectedSpot.id] ?? false}
+                checkingIn={checkingIn}
+                canCheckin={!!user}
+                onCheckin={() => handleCheckin(selectedSpot)}
+                onUnCheckin={() => handleUnCheckin(selectedSpot)}
+                onToggleFavorite={() => handleToggleFavorite(selectedSpot)}
+              />
+            </Popup>
+          )}
+        </Map>
+        {/* 候補選択モーダル */}
+        {editingLegIndex !== null && (
           <div
             style={{
-              background: "white",
-              borderRadius: "12px",
-              padding: "16px",
-              maxWidth: "360px",
-              width: "90%",
-              maxHeight: "70vh",
-              overflowY: "auto",
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 10,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            <p
+            <div
               style={{
-                margin: "0 0 12px",
-                fontWeight: "bold",
-                fontSize: "14px",
+                background: "white",
+                borderRadius: "12px",
+                padding: "16px",
+                maxWidth: "360px",
+                width: "90%",
+                maxHeight: "70vh",
+                overflowY: "auto",
               }}
             >
-              候補を選択
-            </p>
-            {legCandidates.length === 0 && (
-              <p style={{ fontSize: "13px", color: "#999" }}>
-                候補が見つかりません
-              </p>
-            )}
-            {legCandidates.map((option, i) => (
-              <button
-                key={i}
-                onClick={() => handleSelectCandidate(option)}
+              <p
                 style={{
-                  display: "block",
+                  margin: "0 0 12px",
+                  fontWeight: "bold",
+                  fontSize: "14px",
+                }}
+              >
+                候補を選択
+              </p>
+              {legCandidates.length === 0 && (
+                <p style={{ fontSize: "13px", color: "#999" }}>
+                  候補が見つかりません
+                </p>
+              )}
+              {legCandidates.map((option, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSelectCandidate(option)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "10px",
+                    marginBottom: "8px",
+                    border: "1px solid #ddd",
+                    borderRadius: "8px",
+                    background: "white",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div style={{ fontSize: "13px", fontWeight: "bold" }}>
+                    {secsToTimeStr(option.departureSecs)} 発 →{" "}
+                    {secsToTimeStr(option.arrivalSecs)} 着
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#666",
+                      marginTop: "2px",
+                    }}
+                  >
+                    所要 {Math.round(option.durationSecs / 60)}分
+                    {option.transferCount > 0 &&
+                      ` ・乗換${option.transferCount}回`}
+                  </div>
+                  {option.accessWalkSecs ? (
+                    <div style={{ fontSize: "10px", color: "#999" }}>
+                      🚶 最寄り駅まで徒歩
+                      {Math.round(option.accessWalkSecs / 60)}分
+                    </div>
+                  ) : null}
+                  {option.legs
+                    .filter((l) => l.kind === "transit")
+                    .map((leg, li) => (
+                      <div key={li} style={{ fontSize: "10px", color: "#999" }}>
+                        {leg.routeName ?? leg.mode} {leg.from.name}→
+                        {leg.to.name}
+                      </div>
+                    ))}
+                  {option.egressWalkSecs ? (
+                    <div style={{ fontSize: "10px", color: "#999" }}>
+                      🚶 駅から目的地まで徒歩
+                      {Math.round(option.egressWalkSecs / 60)}分
+                    </div>
+                  ) : null}
+                  {option.legs
+                    .filter((l) => l.kind === "transit")
+                    .map((leg, li) => (
+                      <div key={li} style={{ fontSize: "10px", color: "#999" }}>
+                        {leg.routeName ?? leg.mode} {leg.from.name}→
+                        {leg.to.name}
+                      </div>
+                    ))}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setEditingLegIndex(null);
+                  setLegCandidates([]);
+                }}
+                style={{
                   width: "100%",
-                  textAlign: "left",
-                  padding: "10px",
-                  marginBottom: "8px",
+                  padding: "8px",
+                  marginTop: "4px",
                   border: "1px solid #ddd",
                   borderRadius: "8px",
                   background: "white",
                   cursor: "pointer",
+                  fontSize: "13px",
                 }}
               >
-                <div style={{ fontSize: "13px", fontWeight: "bold" }}>
-                  {secsToTimeStr(option.departureSecs)} 発 →{" "}
-                  {secsToTimeStr(option.arrivalSecs)} 着
-                </div>
-                <div
-                  style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}
-                >
-                  所要 {Math.round(option.durationSecs / 60)}分
-                  {option.transferCount > 0 &&
-                    ` ・乗換${option.transferCount}回`}
-                </div>
-                {option.accessWalkSecs ? (
-                  <div style={{ fontSize: "10px", color: "#999" }}>
-                    🚶 最寄り駅まで徒歩{Math.round(option.accessWalkSecs / 60)}
-                    分
-                  </div>
-                ) : null}
-                {option.legs
-                  .filter((l) => l.kind === "transit")
-                  .map((leg, li) => (
-                    <div key={li} style={{ fontSize: "10px", color: "#999" }}>
-                      {leg.routeName ?? leg.mode} {leg.from.name}→{leg.to.name}
-                    </div>
-                  ))}
-                {option.egressWalkSecs ? (
-                  <div style={{ fontSize: "10px", color: "#999" }}>
-                    🚶 駅から目的地まで徒歩
-                    {Math.round(option.egressWalkSecs / 60)}分
-                  </div>
-                ) : null}
-                {option.legs
-                  .filter((l) => l.kind === "transit")
-                  .map((leg, li) => (
-                    <div key={li} style={{ fontSize: "10px", color: "#999" }}>
-                      {leg.routeName ?? leg.mode} {leg.from.name}→{leg.to.name}
-                    </div>
-                  ))}
+                キャンセル
               </button>
-            ))}
-            <button
-              onClick={() => {
-                setEditingLegIndex(null);
-                setLegCandidates([]);
-              }}
-              style={{
-                width: "100%",
-                padding: "8px",
-                marginTop: "4px",
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                background: "white",
-                cursor: "pointer",
-                fontSize: "13px",
-              }}
-            >
-              キャンセル
-            </button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }

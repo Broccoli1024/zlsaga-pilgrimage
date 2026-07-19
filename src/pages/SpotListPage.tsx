@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import LangToggle from "../components/ui/LangToggle";
 import type { Spot } from "../types";
+import SEO from "../components/seo/SEO";
 
 interface Area {
   id: string;
@@ -139,6 +140,15 @@ export default function SpotListPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
+      <SEO
+        title={i18n.language.startsWith("en") ? "Spot List" : "スポット一覧"}
+        description={
+          i18n.language.startsWith("en")
+            ? "Browse all Zombie Land Saga pilgrimage spots registered on Pilgrimapp."
+            : "ピルグリマップに登録されている、ゾンビランドサガの聖地スポット一覧です。"
+        }
+        canonical="/spots"
+      />
       <div
         style={{
           maxWidth: "720px",

@@ -5,6 +5,7 @@ import Map, { Marker } from "react-map-gl/mapbox";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/authStore";
 import LangToggle from "../components/ui/LangToggle";
+import SEO from "../components/seo/SEO";
 import type { Spot } from "../types";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -295,6 +296,16 @@ export default function SpotDetailPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
+      <SEO
+        title={name}
+        description={
+          description ??
+          (isEn
+            ? `${name} - a pilgrimage spot on Pilgrimapp`
+            : `${name} - ピルグリマップに登録されている聖地スポット`)
+        }
+        canonical={`/spots/${spot.id}`}
+      />
       <div
         style={{
           maxWidth: "560px",
