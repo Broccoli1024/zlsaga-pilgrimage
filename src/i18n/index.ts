@@ -27,4 +27,10 @@ i18n
     },
   });
 
+// <html lang>属性をi18nの言語設定と同期させる
+document.documentElement.lang = i18n.language.startsWith("en") ? "en" : "ja";
+i18n.on("languageChanged", (lng) => {
+  document.documentElement.lang = lng.startsWith("en") ? "en" : "ja";
+});
+
 export default i18n;
