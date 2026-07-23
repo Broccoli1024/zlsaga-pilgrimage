@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 
 interface SEOProps {
@@ -17,6 +18,25 @@ export default function SEO({
   image,
 }: SEOProps) {
   const fullTitle = `${title} | ${SITE_NAME}`;
+
+  useEffect(() => {
+    // Edge Middlewareがサーバー側で埋め込んだ<title>/<meta>/<link>タグは
+    // react-helmet-asyncが「自分の管理下」と認識できず、削除せずに
+    // 新しいタグを追加してしまうため重複が発生する。
+    // Helmetが自分のタグにdata-rh="true"を付与するのを利用し、
+    // それが付いていない同種のタグ（＝middleware由来の古いタグ）を
+    // 初回マウント時に一度だけ掃除する。
+    const cleanup = () => {
+      document
+        .querySelectorAll(
+          'title:not([data-rh]), meta[name="description"]:not([data-rh]), meta[property^="og:"]:not([data-rh]), link[rel="canonical"]:not([data-rh]), meta[name="twitter:card"]:not([data-rh])',
+        )
+        .forEach((el) => el.remove());
+    };
+    // Helmetのタグ挿入(useEffect)より後に実行されるよう1フレーム遅らせる
+    const id = requestAnimationFrame(cleanup);
+    return () => cancelAnimationFrame(id);
+  }, [fullTitle, description, canonical, image]);
 
   return (
     <Helmet>
