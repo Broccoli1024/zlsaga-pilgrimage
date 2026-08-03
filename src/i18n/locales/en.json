@@ -68,7 +68,21 @@
   },
   "faq": {
     "title": "❓ FAQ",
-    "comingSoon": "Coming soon. Content will be added shortly."
+    "comingSoon": "Coming soon. Content will be added shortly.",
+    "q1": "What is Pilgrimapp?",
+    "a1": "Pilgrimapp is a pilgrimage support app for finding real-world locations (filming locations and inspiration sites) that appear in the Zombie Land Saga series, and recording your visits with check-ins. You can filter spots by area, category, character, and how prominently they appear, and auto-generate an optimal route just by selecting the spots you want to visit.",
+    "q2": "Is it free to use?",
+    "a2": "Yes, it's completely free. You can browse the map and search for spots without an account. A free account is required for features like check-in history and saving routes.",
+    "q3": "What's the difference between \"Sacred\" and \"Sightseeing\"?",
+    "a3": "\"Sacred\" spots are real-world locations that actually appeared in the anime. \"Sightseeing\" spots didn't appear directly in the show but are nearby places worth visiting.",
+    "q4": "How do I create a route?",
+    "a4": "Select the spots you want to visit from the map or spot list, then choose a transport mode (walking, car, or public transit) from \"Create Route\" to auto-generate an optimally ordered route. You can also manually reorder stops. Log in to save routes and revisit them later.",
+    "q5": "A spot's location is wrong, or I want to suggest more info — what should I do?",
+    "a5": "Please use \"Suggest a spot\" in the menu (top right) to submit information. We review submissions and update the app regularly.",
+    "q6": "How do I report a bug?",
+    "a6": "Please use \"Feedback / Report an issue\" in the menu (top right) to report it.",
+    "q7": "Do you support works other than Zombie Land Saga?",
+    "a7": "Currently we only support the Zombie Land Saga series. More works will be added over time."
   },
   "nav": {
     "other": "≡ Other",
