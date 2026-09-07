@@ -69,6 +69,7 @@ export default function StaticPageLayout({
             fontSize: "var(--font-size-md)",
             color: "var(--color-text-main)",
             lineHeight: 1.8,
+            textAlign: "left",
           }}
         >
           {children}

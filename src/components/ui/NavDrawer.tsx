@@ -9,6 +9,9 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
+  { icon: "🗺️", labelKey: "nav.map", to: "/" },
+  { icon: "📍", labelKey: "nav.spots", to: "/spots" },
+  { icon: "🧭", labelKey: "nav.guide", to: "/guide" },
   { icon: "📖", labelKey: "nav.about", to: "/about" },
   {
     icon: "🗺",

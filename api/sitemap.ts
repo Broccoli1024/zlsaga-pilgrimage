@@ -18,7 +18,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).send("Failed to generate sitemap");
   }
 
-  const staticPages = ["", "/about", "/privacy", "/terms", "/license"];
+  const staticPages = [
+    "",
+    "/spots",
+    "/guide",
+    "/about",
+    "/faq",
+    "/privacy",
+    "/terms",
+    "/license",
+  ];
 
   const urls = [
     ...staticPages.map((page) => ({

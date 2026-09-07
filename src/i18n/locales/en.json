@@ -85,9 +85,12 @@
     "a7": "Currently we only support the Zombie Land Saga series. More works will be added over time."
   },
   "nav": {
-    "other": "≡ Other",
+    "other": "≡ Menu",
     "close": "Close menu",
     "open": "Open menu",
+    "map": "Pilgrimage Map",
+    "spots": "Spot List",
+    "guide": "Pilgrimage Guide",
     "about": "About this app",
     "suggestSpot": "Suggest a spot",
     "feedback": "Feedback / Report an issue",

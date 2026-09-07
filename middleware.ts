@@ -3,6 +3,7 @@ export const config = {
     "/",
     "/spots",
     "/spots/:id*",
+    "/guide",
     "/about",
     "/faq",
     "/privacy",
@@ -29,6 +30,11 @@ const STATIC_META: Record<string, PageMeta> = {
     title: "スポット一覧 | ピルグリマップ",
     description:
       "ピルグリマップに登録されている、ゾンビランドサガの聖地スポット一覧です。",
+  },
+  "/guide": {
+    title: "聖地巡礼ガイド | ピルグリマップ",
+    description:
+      "ゾンビランドサガの聖地を探し、無理のない巡礼ルートを組み、現地で気持ちよく楽しむためのガイドです。",
   },
   "/about": {
     title: "このアプリについて | ピルグリマップ",

@@ -22,6 +22,7 @@ import FaqPage from "./pages/FaqPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
 import LicensePage from "./pages/LicensePage";
+import PilgrimageGuidePage from "./pages/PilgrimageGuidePage";
 import NavDrawer from "./components/ui/NavDrawer";
 import NavMenuButton from "./components/ui/NavMenuButton";
 import { HelmetProvider } from "react-helmet-async";
@@ -69,6 +70,12 @@ function AppRoutes() {
         <Route
           path="/about"
           element={<AboutPage onMenuOpen={() => setIsMenuOpen(true)} />}
+        />
+        <Route
+          path="/guide"
+          element={
+            <PilgrimageGuidePage onMenuOpen={() => setIsMenuOpen(true)} />
+          }
         />
         <Route
           path="/faq"
