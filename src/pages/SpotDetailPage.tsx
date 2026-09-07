@@ -293,6 +293,32 @@ export default function SpotDetailPage() {
     ? (spot.description_en ?? spot.description)
     : spot.description;
   const address = isEn ? (spot.address_en ?? spot.address) : spot.address;
+  const station = spot.nearest_station_name
+    ? `${spot.nearest_station_name}${
+        spot.nearest_station_walk_min !== null
+          ? `${isEn ? " (" : "（"}${t("detail.walkMinutes", {
+              min: spot.nearest_station_walk_min,
+            })}${isEn ? ")" : "）"}`
+          : ""
+      }`
+    : null;
+  const busStop = spot.nearest_bus_stop_name
+    ? `${spot.nearest_bus_stop_name}${
+        spot.nearest_bus_stop_walk_min !== null
+          ? `${isEn ? " (" : "（"}${t("detail.walkMinutes", {
+              min: spot.nearest_bus_stop_walk_min,
+            })}${isEn ? ")" : "）"}`
+          : ""
+      }`
+    : null;
+  const visitInfo = [
+    { label: t("detail.address"), value: address },
+    { label: t("detail.access"), value: spot.access_info },
+    { label: t("detail.nearestStation"), value: station },
+    { label: t("detail.nearestBusStop"), value: busStop },
+    { label: t("detail.parking"), value: spot.parking_info },
+    { label: t("detail.accessNotes"), value: spot.access_notes },
+  ].filter((item) => item.value);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-bg)" }}>
@@ -449,28 +475,68 @@ export default function SpotDetailPage() {
           </p>
         )}
 
-        {/* 住所・滞在時間 */}
-        {address && (
-          <p
+        {/* 現地情報 */}
+        {(visitInfo.length > 0 || spot.duration_min) && (
+          <section
             style={{
-              fontSize: "var(--font-size-sm)",
-              color: "var(--color-text-muted)",
-              marginBottom: "var(--space-xs)",
-            }}
-          >
-            📍 {address}
-          </p>
-        )}
-        {spot.duration_min && (
-          <p
-            style={{
-              fontSize: "var(--font-size-sm)",
-              color: "var(--color-text-muted)",
+              background: "var(--color-card)",
+              borderRadius: "var(--radius-md)",
+              padding: "var(--space-md) var(--space-lg)",
               marginBottom: "var(--space-md)",
+              boxShadow: "var(--shadow-sm)",
+              textAlign: "left",
             }}
           >
-            {t("detail.stayTime", { min: spot.duration_min })}
-          </p>
+            <h2
+              style={{
+                margin: "0 0 var(--space-sm)",
+                fontSize: "var(--font-size-md)",
+                color: "var(--color-text-main)",
+                fontWeight: "500",
+              }}
+            >
+              {t("detail.visitInfo")}
+            </h2>
+            {visitInfo.map((item) => (
+              <div
+                key={item.label}
+                style={{
+                  padding: "var(--space-sm) 0",
+                  borderBottom: "0.5px solid var(--color-border-light)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "var(--font-size-xs)",
+                    color: "var(--color-text-muted)",
+                    marginBottom: "2px",
+                  }}
+                >
+                  {item.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: "var(--font-size-sm)",
+                    color: "var(--color-text-sub)",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {item.value}
+                </div>
+              </div>
+            ))}
+            {spot.duration_min && (
+              <p
+                style={{
+                  fontSize: "var(--font-size-sm)",
+                  color: "var(--color-text-muted)",
+                  margin: "var(--space-sm) 0 0",
+                }}
+              >
+                {t("detail.stayTime", { min: spot.duration_min })}
+              </p>
+            )}
+          </section>
         )}
 
         {/* 登場キャラクター */}

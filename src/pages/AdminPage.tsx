@@ -40,6 +40,22 @@ interface FormPreviewRow extends PreviewRow {
   episode_ids: string[];
 }
 
+const CONTENT_FIELDS = [
+  "description",
+  "address",
+  "access_info",
+  "parking_info",
+  "nearest_station_name",
+  "nearest_bus_stop_name",
+  "access_notes",
+] as const;
+
+const contentCompleteness = (spot: Record<string, unknown>) =>
+  CONTENT_FIELDS.filter((field) => {
+    const value = spot[field];
+    return value !== null && value !== undefined && String(value).trim() !== "";
+  }).length;
+
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
   const [activeTab, setActiveTab] = useState<"csv" | "forms" | "manage">("csv");
@@ -430,11 +446,24 @@ export default function AdminPage() {
           lng: Number(editForm.lng),
           area_id: editForm.area_id || null,
           category_id: editForm.category_id || null,
+          address: editForm.address || null,
+          address_en: editForm.address_en || null,
           description: editForm.description || null,
           description_en: editForm.description_en || null,
+          access_info: editForm.access_info || null,
+          parking_info: editForm.parking_info || null,
           duration_min: editForm.duration_min
             ? Number(editForm.duration_min)
             : null,
+          nearest_station_name: editForm.nearest_station_name || null,
+          nearest_station_walk_min: editForm.nearest_station_walk_min
+            ? Number(editForm.nearest_station_walk_min)
+            : null,
+          nearest_bus_stop_name: editForm.nearest_bus_stop_name || null,
+          nearest_bus_stop_walk_min: editForm.nearest_bus_stop_walk_min
+            ? Number(editForm.nearest_bus_stop_walk_min)
+            : null,
+          access_notes: editForm.access_notes || null,
           is_published: !!editForm.is_published,
         },
         tagIds: editTagIds,
@@ -1056,6 +1085,152 @@ export default function AdminPage() {
                         minHeight: "60px",
                       }}
                     />
+                    <p
+                      style={{
+                        margin: "8px 0 6px",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        color: "#555",
+                      }}
+                    >
+                      現地情報
+                    </p>
+                    <input
+                      value={editForm.address ?? ""}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, address: e.target.value })
+                      }
+                      placeholder="住所"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    />
+                    <input
+                      value={editForm.address_en ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          address_en: e.target.value,
+                        })
+                      }
+                      placeholder="住所（英語）"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                      }}
+                    />
+                    <textarea
+                      value={editForm.access_info ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          access_info: e.target.value,
+                        })
+                      }
+                      placeholder="アクセス方法（公共交通・自動車など）"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                        minHeight: "54px",
+                      }}
+                    />
+                    <textarea
+                      value={editForm.parking_info ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          parking_info: e.target.value,
+                        })
+                      }
+                      placeholder="駐車場情報"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        marginBottom: "6px",
+                        fontSize: "13px",
+                        minHeight: "54px",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "2fr 1fr",
+                        gap: "6px",
+                      }}
+                    >
+                      <input
+                        value={editForm.nearest_station_name ?? ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            nearest_station_name: e.target.value,
+                          })
+                        }
+                        placeholder="最寄り駅"
+                        style={{ padding: "6px", fontSize: "13px" }}
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.nearest_station_walk_min ?? ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            nearest_station_walk_min: e.target.value,
+                          })
+                        }
+                        placeholder="徒歩（分）"
+                        style={{ padding: "6px", fontSize: "13px" }}
+                      />
+                      <input
+                        value={editForm.nearest_bus_stop_name ?? ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            nearest_bus_stop_name: e.target.value,
+                          })
+                        }
+                        placeholder="最寄りバス停"
+                        style={{ padding: "6px", fontSize: "13px" }}
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.nearest_bus_stop_walk_min ?? ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            nearest_bus_stop_walk_min: e.target.value,
+                          })
+                        }
+                        placeholder="徒歩（分）"
+                        style={{ padding: "6px", fontSize: "13px" }}
+                      />
+                    </div>
+                    <textarea
+                      value={editForm.access_notes ?? ""}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          access_notes: e.target.value,
+                        })
+                      }
+                      placeholder="訪問時の注意・補足"
+                      style={{
+                        width: "100%",
+                        padding: "6px",
+                        margin: "6px 0",
+                        fontSize: "13px",
+                        minHeight: "54px",
+                      }}
+                    />
                     <input
                       type="number"
                       value={editForm.duration_min ?? ""}
@@ -1286,6 +1461,19 @@ export default function AdminPage() {
                         ・
                         {categories.find((c) => c.id === spot.category_id)
                           ?.name ?? "カテゴリ未設定"}
+                      </p>
+                      <p
+                        style={{
+                          margin: "4px 0 0",
+                          fontSize: "11px",
+                          color:
+                            contentCompleteness(spot) >= 5
+                              ? "#2e7d32"
+                              : "#c77700",
+                        }}
+                      >
+                        情報充実度：{contentCompleteness(spot)}/
+                        {CONTENT_FIELDS.length}
                       </p>
                     </div>
                     <div style={{ display: "flex", gap: "6px" }}>
