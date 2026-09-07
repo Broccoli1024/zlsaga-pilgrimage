@@ -21,8 +21,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData, error: userError } =
-      await supabaseAuthClient.auth.getUser();
+    const { data: userData, error: userError } = await supabaseAuthClient.auth
+      .getUser();
 
     if (
       userError ||
@@ -58,6 +58,35 @@ Deno.serve(async (req) => {
     const failedDetails: { name: string; error: string }[] = [];
 
     for (const row of rows) {
+      const { data: existingSpot, error: duplicateCheckError } =
+        await supabaseAdmin
+          .from("spots")
+          .select("id")
+          .eq("work_id", row.work_id)
+          .eq("name", row.name)
+          .eq("lat", row.lat)
+          .eq("lng", row.lng)
+          .limit(1)
+          .maybeSingle();
+
+      if (duplicateCheckError) {
+        failCount++;
+        failedDetails.push({
+          name: row.name,
+          error: `重複確認に失敗しました: ${duplicateCheckError.message}`,
+        });
+        continue;
+      }
+
+      if (existingSpot) {
+        failCount++;
+        failedDetails.push({
+          name: row.name,
+          error: "同じ作品・名称・座標のスポットが既に登録されています",
+        });
+        continue;
+      }
+
       const { data: insertedSpot, error } = await supabaseAdmin
         .from("spots")
         .insert({

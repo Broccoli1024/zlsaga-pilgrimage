@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData, error: userError } =
-      await supabaseAuthClient.auth.getUser();
+    const { data: userData, error: userError } = await supabaseAuthClient.auth
+      .getUser();
 
     if (
       userError ||
@@ -146,6 +146,56 @@ Deno.serve(async (req) => {
           },
         );
       }
+
+      const { data: currentSpot, error: currentSpotError } = await supabaseAdmin
+        .from("spots")
+        .select("work_id, name, lat, lng")
+        .eq("id", spotId)
+        .single();
+      if (currentSpotError || !currentSpot) {
+        return new Response(
+          JSON.stringify({ error: "更新対象のスポットが見つかりません" }),
+          {
+            status: 404,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
+
+      const { data: duplicateSpot, error: duplicateCheckError } =
+        await supabaseAdmin
+          .from("spots")
+          .select("id")
+          .eq("work_id", currentSpot.work_id)
+          .eq("name", updates.name ?? currentSpot.name)
+          .eq("lat", updates.lat ?? currentSpot.lat)
+          .eq("lng", updates.lng ?? currentSpot.lng)
+          .neq("id", spotId)
+          .limit(1)
+          .maybeSingle();
+      if (duplicateCheckError) {
+        return new Response(
+          JSON.stringify({
+            error: `重複確認に失敗しました: ${duplicateCheckError.message}`,
+          }),
+          {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
+      if (duplicateSpot) {
+        return new Response(
+          JSON.stringify({
+            error: "同じ作品・名称・座標のスポットが既に登録されています",
+          }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+          },
+        );
+      }
+
       const { error } = await supabaseAdmin
         .from("spots")
         .update(updates)
