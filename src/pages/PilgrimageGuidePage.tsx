@@ -24,6 +24,239 @@ const listStyle: CSSProperties = {
   paddingLeft: "var(--space-lg)",
 };
 
+const sectionStyle: CSSProperties = {
+  marginTop: "var(--space-xl)",
+};
+
+const cardGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: "var(--space-md)",
+  margin: "0 0 var(--space-lg)",
+};
+
+const cardStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "var(--space-sm)",
+  padding: "var(--space-md)",
+  background: "var(--color-card)",
+  border: "1px solid var(--color-border-light)",
+  borderRadius: "var(--radius-md)",
+  boxShadow: "var(--shadow-sm)",
+};
+
+const cardLinkStyle: CSSProperties = {
+  color: "var(--color-primary)",
+  fontWeight: 500,
+  textDecoration: "none",
+};
+
+interface GuideSpot {
+  id: string;
+  ja: string;
+  en: string;
+}
+
+interface AreaFeature {
+  ja: string;
+  en: string;
+  descriptionJa: string;
+  descriptionEn: string;
+  spots: GuideSpot[];
+}
+
+interface ModelRoute {
+  ja: string;
+  en: string;
+  descriptionJa: string;
+  descriptionEn: string;
+  spots: GuideSpot[];
+}
+
+const areaFeatures: AreaFeature[] = [
+  {
+    ja: "佐賀市街地：ライブと物語を歩く",
+    en: "Central Saga: live venues and story scenes",
+    descriptionJa:
+      "佐賀駅を起点に、ライブ会場や市街地のスポットをつなぐ、初めての巡礼にも組み込みやすいエリアです。",
+    descriptionEn:
+      "Starting at Saga Station, this compact area connects live venues and story locations and is an easy introduction to pilgrimage.",
+    spots: [
+      {
+        id: "c0a79eb3-d2ed-4ceb-9ac0-61caed1ce4bb",
+        ja: "佐賀駅",
+        en: "Saga Station",
+      },
+      {
+        id: "7256623c-f2cf-42bf-a77f-87dc136e1ef8",
+        ja: "656広場（むつごろう広場）",
+        en: "656 Plaza (Mutsugoro Plaza)",
+      },
+      {
+        id: "0e17fe1c-d61e-4150-88cb-852802730bc6",
+        ja: "GEILS / SPIRITS",
+        en: "GEILS / SPIRITS",
+      },
+      {
+        id: "e4904cc3-7569-4805-80c4-4a1a0089718f",
+        ja: "神野公園",
+        en: "Kanno Park",
+      },
+    ],
+  },
+  {
+    ja: "唐津：海・駅・ライブ会場",
+    en: "Karatsu: coast, station, and live venues",
+    descriptionJa:
+      "唐津駅周辺から海側へ広げていくエリア。駅近のスポットと海岸・展望台を分けて計画すると、滞在時間を調整しやすくなります。",
+    descriptionEn:
+      "Expand from Karatsu Station toward the coast. Separating station-area stops from beaches and viewpoints makes the day easier to pace.",
+    spots: [
+      {
+        id: "33079d4d-1d00-434d-8119-06de769bea39",
+        ja: "唐津駅",
+        en: "Karatsu Station",
+      },
+      {
+        id: "24dc04cb-2b8e-40f5-8449-2a3c036088d4",
+        ja: "唐津市ふるさと会館アルピノ",
+        en: "Karatsu City Furusato Hall Alpino",
+      },
+      {
+        id: "6884bbc5-a3ed-4244-aecc-f9ea976e4669",
+        ja: "唐津市歴史民俗資料館",
+        en: "Karatsu City Museum of History and Folklore",
+      },
+      {
+        id: "b0c6786f-a824-4ba7-95ac-9f2e3800ff1b",
+        ja: "鏡山展望台",
+        en: "Kagamiyama Observation Deck",
+      },
+    ],
+  },
+  {
+    ja: "嬉野・武雄：温泉と周辺スポット",
+    en: "Ureshino and Takeo: hot springs and nearby spots",
+    descriptionJa:
+      "温泉街で休憩を取りながら、嬉野と武雄のスポットを組み合わせるエリアです。営業時間や入館情報は出発前に各施設で確認してください。",
+    descriptionEn:
+      "Combine Ureshino and Takeo locations with breaks in the hot-spring towns. Check opening hours and admission information with each facility before leaving.",
+    spots: [
+      {
+        id: "83029f8b-1fda-4306-9982-73e85ab3c3d9",
+        ja: "嬉野温泉 湯宿広場",
+        en: "Ureshino Onsen: Yuyado Plaza",
+      },
+      {
+        id: "2b08b365-abb3-438e-8a6c-80e3fcc69f5d",
+        ja: "cafe moka",
+        en: "Cafe Moka",
+      },
+      {
+        id: "4437f083-0123-484d-84ef-e9c4ca87b977",
+        ja: "武雄温泉新館",
+        en: "Takeo Onsen New Wing",
+      },
+      {
+        id: "4e465a10-f7d4-4f5e-9987-2cc1509d7961",
+        ja: "佐賀県立宇宙科学館 ゆめぎんが",
+        en: "Saga Prefectural Space Science Museum Yumeginga",
+      },
+    ],
+  },
+];
+
+const modelRoutes: ModelRoute[] = [
+  {
+    ja: "半日：佐賀駅から市街地へ",
+    en: "Half day: Saga Station to the city center",
+    descriptionJa:
+      "駅を起点に市街地のスポットを選び、滞在時間に合わせて立ち寄り先を増減するルートです。",
+    descriptionEn:
+      "Start at the station and adjust the number of city-center stops to fit the time you have.",
+    spots: [
+      {
+        id: "c0a79eb3-d2ed-4ceb-9ac0-61caed1ce4bb",
+        ja: "佐賀駅",
+        en: "Saga Station",
+      },
+      {
+        id: "7256623c-f2cf-42bf-a77f-87dc136e1ef8",
+        ja: "656広場（むつごろう広場）",
+        en: "656 Plaza (Mutsugoro Plaza)",
+      },
+      {
+        id: "0e17fe1c-d61e-4150-88cb-852802730bc6",
+        ja: "GEILS / SPIRITS",
+        en: "GEILS / SPIRITS",
+      },
+    ],
+  },
+  {
+    ja: "1日：唐津駅から海側へ",
+    en: "Full day: Karatsu Station toward the coast",
+    descriptionJa:
+      "駅周辺のスポットを先に訪ね、午後に海岸や展望台を組み合わせる想定です。移動手段に応じて順番を組み替えてください。",
+    descriptionEn:
+      "Visit station-area locations first, then add a beach or viewpoint in the afternoon. Reorder the stops for your chosen transport mode.",
+    spots: [
+      {
+        id: "33079d4d-1d00-434d-8119-06de769bea39",
+        ja: "唐津駅",
+        en: "Karatsu Station",
+      },
+      {
+        id: "24dc04cb-2b8e-40f5-8449-2a3c036088d4",
+        ja: "唐津市ふるさと会館アルピノ",
+        en: "Karatsu City Furusato Hall Alpino",
+      },
+      {
+        id: "b0c6786f-a824-4ba7-95ac-9f2e3800ff1b",
+        ja: "鏡山展望台",
+        en: "Kagamiyama Observation Deck",
+      },
+    ],
+  },
+  {
+    ja: "温泉を組み込む：嬉野・武雄",
+    en: "Add a hot-spring stop: Ureshino and Takeo",
+    descriptionJa:
+      "スポット巡りの途中に休憩を入れやすい組み合わせです。施設の営業状況を確認し、無理のない件数に絞ってください。",
+    descriptionEn:
+      "This combination makes it easy to include a break. Check facility hours and keep the number of stops realistic.",
+    spots: [
+      {
+        id: "83029f8b-1fda-4306-9982-73e85ab3c3d9",
+        ja: "嬉野温泉 湯宿広場",
+        en: "Ureshino Onsen: Yuyado Plaza",
+      },
+      {
+        id: "2b08b365-abb3-438e-8a6c-80e3fcc69f5d",
+        ja: "cafe moka",
+        en: "Cafe Moka",
+      },
+      {
+        id: "4437f083-0123-484d-84ef-e9c4ca87b977",
+        ja: "武雄温泉新館",
+        en: "Takeo Onsen New Wing",
+      },
+    ],
+  },
+];
+
+function SpotLinks({ spots, isEn }: { spots: GuideSpot[]; isEn: boolean }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 10px" }}>
+      {spots.map((spot) => (
+        <Link key={spot.id} to={`/spots/${spot.id}`} style={cardLinkStyle}>
+          {isEn ? spot.en : spot.ja}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default function PilgrimageGuidePage({
   onMenuOpen,
 }: PilgrimageGuidePageProps) {
@@ -58,25 +291,31 @@ export default function PilgrimageGuidePage({
             <p style={paragraphStyle}>
               Spots are spread across Saga Prefecture. Start by choosing one
               area in the spot list, then narrow the results by category,
-              character, or appearance. Grouping nearby locations reduces
-              travel time and leaves more time to enjoy each place.
+              character, or appearance. Grouping nearby locations reduces travel
+              time and leaves more time to enjoy each place.
             </p>
 
             <h2 style={headingStyle}>2. Understand the spot labels</h2>
             <p style={paragraphStyle}>
-              “Sacred” identifies a filming or inspiration location that
-              appears in the work. “Sightseeing” identifies a nearby place that
-              can be combined with a pilgrimage itinerary. Episode and scene
-              details on each spot page help you decide which locations matter
-              most to your trip.
+              “Sacred” identifies a filming or inspiration location that appears
+              in the work. “Sightseeing” identifies a nearby place that can be
+              combined with a pilgrimage itinerary. Episode and scene details on
+              each spot page help you decide which locations matter most to your
+              trip.
             </p>
 
-            <h2 style={headingStyle}>3. Build a route you can actually finish</h2>
+            <h2 style={headingStyle}>
+              3. Build a route you can actually finish
+            </h2>
             <ul style={listStyle}>
               <li>Select the locations you most want to visit.</li>
               <li>Choose walking, driving, or public transport.</li>
-              <li>Include time spent at each location, not only travel time.</li>
-              <li>Leave extra time for transfers, meals, and unexpected delays.</li>
+              <li>
+                Include time spent at each location, not only travel time.
+              </li>
+              <li>
+                Leave extra time for transfers, meals, and unexpected delays.
+              </li>
             </ul>
             <p style={paragraphStyle}>
               The automatic route is a planning aid. Always check current
@@ -88,16 +327,16 @@ export default function PilgrimageGuidePage({
             <p style={paragraphStyle}>
               Some locations are ordinary streets, businesses, schools, or
               residential areas. Follow posted rules, avoid blocking paths or
-              entrances, keep noise down, and ask before photographing people
-              or private property. Do not enter restricted areas.
+              entrances, keep noise down, and ask before photographing people or
+              private property. Do not enter restricted areas.
             </p>
 
             <h2 style={headingStyle}>5. Keep and improve your record</h2>
             <p style={paragraphStyle}>
               After visiting, use check-in and favorites to keep track of your
               trip. If a pin, access note, or scene description is incorrect,
-              send the details through the suggestion form so the listing can
-              be reviewed and improved.
+              send the details through the suggestion form so the listing can be
+              reviewed and improved.
             </p>
           </>
         ) : (
@@ -138,6 +377,74 @@ export default function PilgrimageGuidePage({
             </p>
           </>
         )}
+
+        <section style={sectionStyle}>
+          <h2 style={headingStyle}>
+            {isEn ? "Featured areas" : "エリア別の見どころ"}
+          </h2>
+          <p style={paragraphStyle}>
+            {isEn
+              ? "These are compact starting points built from the locations already registered in Pilgrimapp. Open each spot for the latest access details, then adjust the order in the route planner."
+              : "ピルグリマップに登録済みのスポットから、最初に計画しやすいまとまりを選びました。各スポットの最新のアクセス情報を確認し、最後にルート作成で順番を調整してください。"}
+          </p>
+          <div style={cardGridStyle}>
+            {areaFeatures.map((area) => (
+              <article key={area.ja} style={cardStyle}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--font-size-lg)",
+                    color: "var(--color-text-main)",
+                    fontWeight: 500,
+                  }}
+                >
+                  {isEn ? area.en : area.ja}
+                </h3>
+                <p style={{ ...paragraphStyle, flex: 1 }}>
+                  {isEn ? area.descriptionEn : area.descriptionJa}
+                </p>
+                <SpotLinks spots={area.spots} isEn={isEn} />
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section style={sectionStyle}>
+          <h2 style={headingStyle}>{isEn ? "Model routes" : "モデルルート"}</h2>
+          <p style={paragraphStyle}>
+            {isEn
+              ? "A model route is a starting idea, not a fixed itinerary. Select the stops you want and let Pilgrimapp recalculate the route for walking, driving, or public transport."
+              : "モデルルートは旅程を固定するものではなく、計画を始めるためのたたき台です。訪れたい場所を選び、徒歩・自動車・公共交通機関に合わせてピルグリマップで再計算してください。"}
+          </p>
+          <div style={cardGridStyle}>
+            {modelRoutes.map((route) => (
+              <article key={route.ja} style={cardStyle}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--font-size-lg)",
+                    color: "var(--color-text-main)",
+                    fontWeight: 500,
+                  }}
+                >
+                  {isEn ? route.en : route.ja}
+                </h3>
+                <p style={{ ...paragraphStyle, flex: 1 }}>
+                  {isEn ? route.descriptionEn : route.descriptionJa}
+                </p>
+                <SpotLinks spots={route.spots} isEn={isEn} />
+                <Link
+                  to={`/routes/new?spots=${route.spots.map((spot) => spot.id).join(",")}`}
+                  style={cardLinkStyle}
+                >
+                  {isEn
+                    ? "Open this route in the planner →"
+                    : "この候補をルート作成で開く →"}
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <p style={{ ...paragraphStyle, marginTop: "var(--space-xl)" }}>
           <Link to="/spots" style={{ color: "var(--color-primary)" }}>
