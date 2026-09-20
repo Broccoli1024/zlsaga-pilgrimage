@@ -1,3 +1,4 @@
+import type * as GeoJSON from "geojson";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Map, { Marker, Popup, Source, Layer } from "react-map-gl/mapbox";
 import type { MapRef } from "react-map-gl/mapbox";

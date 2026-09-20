@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && tsc -p tsconfig.ai.json && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ai": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/ai/cli.ts",
+    "test": "node --test scripts/ai/*.test.ts scripts/*.test.mjs",
+    "typecheck": "tsc -b && tsc -p tsconfig.ai.json",
+    "lint:ai": "eslint scripts/ai"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
@@ -29,6 +33,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.1",
+    "@types/geojson": "^7946.0.16",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^24.12.3",
     "@types/papaparse": "^5.5.2",
@@ -47,5 +52,8 @@
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25"
   }
 }
