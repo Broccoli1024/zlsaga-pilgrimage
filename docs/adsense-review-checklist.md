@@ -1,6 +1,6 @@
 # AdSense再審査チェックリスト
 
-更新日: 2026年9月20日
+更新日: 2026年10月5日
 
 ## コード側で確認済み
 
@@ -9,6 +9,10 @@
 - 全ページ共通の自動広告スクリプトを削除
 - 地図、スポット一覧・詳細、ルート作成・結果、マイページ、ログイン、管理画面では広告を読み込まない
 - 現在、手動広告ユニットを表示するページはない
+- 主要ページとスポット詳細は、JavaScriptを実行しないクローラーにも本文と主要リンクを返す
+- `/guide` から4本の独立した実用ガイドへ移動できる
+- 各ガイドをsitemapに掲載する
+- ログイン、マイページ、管理、ルート作成・結果は `noindex, follow` にする
 
 この状態ではサイトにGoogle広告は表示されない。審査中に操作画面へ自動広告が出ることを防ぎ、サイトの接続確認はメタタグとads.txtで行う。
 
@@ -29,6 +33,8 @@
 - ページソースに `google-adsense-account` メタタグがある
 - `pagead2.googlesyndication.com/pagead/js/adsbygoogle.js` を読み込んでいない
 - `/guide` の日本語・英語本文、エリアガイド、モデルルートが表示される
+- `/guide/saga-city`、`/guide/karatsu`、`/guide/ureshino-takeo`、`/guide/planning-and-etiquette` が表示される
+- JavaScriptを実行しない取得でも、上記ガイドの見出し・本文・内部リンクがHTMLに含まれる
 - `/robots.txt` と `/sitemap.xml` が取得でき、sitemapに `/guide` が含まれる
 - 地図・ルート・ログイン・管理画面に広告枠がない
 

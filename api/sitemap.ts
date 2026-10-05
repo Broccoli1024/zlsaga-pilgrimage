@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { guideArticles } from "../src/data/guideArticles";
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -32,6 +33,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const urls = [
     ...staticPages.map((page) => ({
       loc: `${BASE_URL}${page}`,
+      lastmod: new Date().toISOString().split("T")[0],
+    })),
+    ...guideArticles.map((article) => ({
+      loc: `${BASE_URL}/guide/${article.slug}`,
       lastmod: new Date().toISOString().split("T")[0],
     })),
     ...(spots ?? []).map((spot) => ({

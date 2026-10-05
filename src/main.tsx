@@ -17,7 +17,12 @@ document
   )
   .forEach((el) => el.remove());
 
-createRoot(document.getElementById("root")!).render(
+const root = document.getElementById("root")!;
+// Middlewareが検索・審査クローラー向けに埋め込んだ本文を、React起動時に
+// 同じ画面の対話UIへ置き換える。SSRのhydrationではないため先に空にする。
+root.replaceChildren();
+
+createRoot(root).render(
   <StrictMode>
     <App />
   </StrictMode>,

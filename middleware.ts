@@ -1,16 +1,35 @@
+import { findGuideArticle, guideArticles } from "./src/data/guideArticles";
+
 export const config = {
   matcher: [
     "/",
     "/spots",
     "/spots/:id*",
     "/guide",
+    "/guide/:path*",
     "/about",
     "/faq",
     "/privacy",
     "/terms",
     "/license",
+    "/routes/:path*",
+    "/mypage",
+    "/login",
+    "/reset-password",
+    "/admin",
   ],
 };
+
+const NOINDEX_PATHS = new Set([
+  "/mypage",
+  "/login",
+  "/reset-password",
+  "/admin",
+]);
+
+function shouldNoIndex(pathname: string): boolean {
+  return NOINDEX_PATHS.has(pathname) || pathname.startsWith("/routes/");
+}
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -59,6 +78,55 @@ const STATIC_META: Record<string, PageMeta> = {
       "ピルグリマップで利用しているOSS・サービスのライセンス情報です。",
   },
 };
+
+function renderGuideIndex(): string {
+  const links = guideArticles
+    .map(
+      (article) =>
+        `<li><a href="/guide/${escapeHtml(article.slug)}">${escapeHtml(article.titleJa)}</a><p>${escapeHtml(article.descriptionJa)}</p></li>`,
+    )
+    .join("");
+
+  return `<main data-server-content="true"><h1>ゾンビランドサガ 聖地巡礼ガイド</h1><p>佐賀県内の聖地を、移動時間や現地での過ごし方まで考えて無理なく巡るための実用ガイドです。地図上の場所を集めるだけでなく、目的に合う場所を選び、地域の日常に配慮した計画を作る方法を紹介します。</p><h2>目的別・エリア別ガイド</h2><ul>${links}</ul><p><a href="/spots">登録スポットの一覧を見る</a></p></main>`;
+}
+
+function renderGuideArticle(pathname: string): string | null {
+  const match = pathname.match(/^\/guide\/([^/]+)$/);
+  if (!match) return null;
+  const article = findGuideArticle(match[1]);
+  if (!article) return null;
+
+  const sections = article.sections
+    .map(
+      (section) =>
+        `<section><h2>${escapeHtml(section.headingJa)}</h2>${section.paragraphsJa
+          .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+          .join("")}</section>`,
+    )
+    .join("");
+  const spots = article.spots.length
+    ? `<section><h2>このガイドで紹介したスポット</h2><ul>${article.spots
+        .map(
+          (spot) =>
+            `<li><a href="/spots/${encodeURIComponent(spot.id)}">${escapeHtml(spot.ja)}</a></li>`,
+        )
+        .join("")}</ul></section>`
+    : "";
+
+  return `<main data-server-content="true"><article><h1>${escapeHtml(article.titleJa)}</h1><p>${escapeHtml(article.introJa)}</p>${sections}${spots}<p><a href="/guide">聖地巡礼ガイドへ戻る</a></p></article></main>`;
+}
+
+function renderStaticFallback(pathname: string, meta?: PageMeta): string {
+  if (pathname === "/guide") return renderGuideIndex();
+  const article = renderGuideArticle(pathname);
+  if (article) return article;
+
+  const title = meta?.title ?? "ピルグリマップ";
+  const description =
+    meta?.description ??
+    "ゾンビランドサガの聖地と周辺の観光スポットを探し、巡礼ルートを計画できる地図サービスです。";
+  return `<main data-server-content="true"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p><nav aria-label="主要ページ"><ul><li><a href="/guide">聖地巡礼ガイド</a></li><li><a href="/spots">スポット一覧</a></li><li><a href="/about">このアプリについて</a></li><li><a href="/faq">よくある質問</a></li></ul></nav></main>`;
+}
 
 async function fetchSpotMeta(spotId: string): Promise<PageMeta | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
@@ -114,6 +182,17 @@ export default async function middleware(request: Request) {
     };
   }
 
+  const guideMatch = pathname.match(/^\/guide\/([^/]+)$/);
+  if (guideMatch) {
+    const article = findGuideArticle(guideMatch[1]);
+    if (article) {
+      meta = {
+        title: `${article.titleJa} | ピルグリマップ`,
+        description: article.descriptionJa,
+      };
+    }
+  }
+
   // 元のindex.htmlを取得（このURLはmiddlewareのmatcherに含まれないため無限ループしない）
   const indexRes = await fetch(new URL("/index.html", url.origin));
   let html = await indexRes.text();
@@ -134,6 +213,18 @@ export default async function middleware(request: Request) {
         `</head>`,
     );
   }
+
+  if (shouldNoIndex(pathname)) {
+    html = html.replace(
+      "</head>",
+      '<meta name="robots" content="noindex, follow" />\n</head>',
+    );
+  }
+
+  html = html.replace(
+    '<div id="root"></div>',
+    `<div id="root">${renderStaticFallback(pathname, meta)}</div>`,
+  );
 
   return new Response(html, {
     status: indexRes.status,

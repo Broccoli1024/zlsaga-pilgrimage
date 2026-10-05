@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import StaticPageLayout from "../components/layout/StaticPageLayout";
 import SEO from "../components/seo/SEO";
+import { guideArticles } from "../data/guideArticles";
 
 interface PilgrimageGuidePageProps {
   onMenuOpen: () => void;
@@ -278,6 +279,37 @@ export default function PilgrimageGuidePage({
         title={isEn ? "🧭 Pilgrimage Planning Guide" : "🧭 聖地巡礼ガイド"}
         onMenuOpen={onMenuOpen}
       >
+        <section style={{ marginBottom: "var(--space-xl)" }}>
+          <h2 style={{ ...headingStyle, marginTop: 0 }}>
+            {isEn ? "Practical area guides" : "目的別・エリア別の実用ガイド"}
+          </h2>
+          <p style={paragraphStyle}>
+            {isEn
+              ? "Use these original guides to choose a manageable area, allow enough travel time, and respect the people who use each location every day."
+              : "巡るエリアの選び方、移動時間の考え方、現地での配慮を、実際の計画に使える形でまとめています。"}
+          </p>
+          <div style={cardGridStyle}>
+            {guideArticles.map((article) => (
+              <article key={article.slug} style={cardStyle}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--font-size-lg)",
+                    fontWeight: 500,
+                  }}
+                >
+                  {isEn ? article.titleEn : article.titleJa}
+                </h3>
+                <p style={{ ...paragraphStyle, flex: 1 }}>
+                  {isEn ? article.descriptionEn : article.descriptionJa}
+                </p>
+                <Link to={`/guide/${article.slug}`} style={cardLinkStyle}>
+                  {isEn ? "Read the guide →" : "ガイドを読む →"}
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
         {isEn ? (
           <>
             <p style={paragraphStyle}>
