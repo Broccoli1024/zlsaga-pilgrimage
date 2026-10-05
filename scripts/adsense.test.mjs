@@ -71,6 +71,8 @@ test("editorial guide pages are substantial and linked from the sitemap", async 
   for (const slug of slugs) {
     assert.match(source, new RegExp(`slug: ["']${slug}["']`));
   }
-  assert.match(sitemap, /guideArticles\.map/);
+  for (const slug of slugs) {
+    assert.match(sitemap, new RegExp(`["']${slug}["']`));
+  }
   assert.ok(source.length > 12_000, "guide content should remain substantial");
 });

@@ -1,6 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { guideArticles } from "../src/data/guideArticles";
+
+// VercelのNode FunctionからフロントエンドのTSモジュールを直接読むと、
+// デプロイ環境でESM解決に失敗するため、公開URLだけをここで明示する。
+const GUIDE_SLUGS = [
+  "saga-city",
+  "karatsu",
+  "ureshino-takeo",
+  "planning-and-etiquette",
+];
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL!,
@@ -35,8 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       loc: `${BASE_URL}${page}`,
       lastmod: new Date().toISOString().split("T")[0],
     })),
-    ...guideArticles.map((article) => ({
-      loc: `${BASE_URL}/guide/${article.slug}`,
+    ...GUIDE_SLUGS.map((slug) => ({
+      loc: `${BASE_URL}/guide/${slug}`,
       lastmod: new Date().toISOString().split("T")[0],
     })),
     ...(spots ?? []).map((spot) => ({
