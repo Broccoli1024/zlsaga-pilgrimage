@@ -24,6 +24,7 @@ import TermsPage from "./pages/TermsPage";
 import LicensePage from "./pages/LicensePage";
 import PilgrimageGuidePage from "./pages/PilgrimageGuidePage";
 import GuideArticlePage from "./pages/GuideArticlePage";
+import NativeAppLifecycle from "./components/native/NativeAppLifecycle";
 import NavDrawer from "./components/ui/NavDrawer";
 import NavMenuButton from "./components/ui/NavMenuButton";
 import { HelmetProvider } from "react-helmet-async";
@@ -50,6 +51,7 @@ function AppRoutes() {
 
   return (
     <>
+      <NativeAppLifecycle />
       {/* MapPageでは画面右端に固定表示 */}
       {isMapPage && (
         <NavMenuButton

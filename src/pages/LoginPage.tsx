@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import LangToggle from "../components/ui/LangToggle";
 import Button from "../components/ui/Button";
+import { getAuthRedirectUrl } from "../lib/authRedirect";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     if (isResetMode) {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getAuthRedirectUrl("/reset-password"),
       });
       if (error) setError(error.message);
       else setMessage(t("login.resetSent"));
@@ -31,7 +32,7 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: getAuthRedirectUrl("/"),
         },
       });
       if (error) setError(error.message);

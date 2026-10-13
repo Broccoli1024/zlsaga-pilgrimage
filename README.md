@@ -25,11 +25,11 @@ npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 
 フロントエンドの必須設定:
 
-| 環境変数 | 内容 |
-| --- | --- |
-| `VITE_SUPABASE_URL` | 接続先SupabaseのURL |
-| `VITE_SUPABASE_ANON_KEY` | 公開用anonキー。service_roleキーは禁止 |
-| `VITE_MAPBOX_TOKEN` | ブラウザー用公開トークン。localhostを許可したもの |
+| 環境変数                 | 内容                                              |
+| ------------------------ | ------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | 接続先SupabaseのURL                               |
+| `VITE_SUPABASE_ANON_KEY` | 公開用anonキー。service_roleキーは禁止            |
+| `VITE_MAPBOX_TOKEN`      | ブラウザー用公開トークン。localhostを許可したもの |
 
 Viteは `.env.local` を `.env` より優先する。既存の `.env.local` がある環境では値の重複に注意。`VITE_` の変数は公開バンドルに含まれるため、AIのAPIキーや管理者キーを入れない。`.env*` はGit除外、テンプレートだけを追跡する。
 
@@ -71,6 +71,10 @@ Edge FunctionsはDenoを使用し、Nodeのビルド対象外。追加シーク�
 ## AdSense
 
 サイト所有者の確認は `index.html` の `google-adsense-account` メタタグと `public/ads.txt` で行う。全ページ共通の自動広告スクリプトは読み込まない。再審査前の確認と、承認後に広告を戻す範囲は `docs/adsense-review-checklist.md` を参照する。
+
+## iOS / Android
+
+Capacitor 8を使い、Web版と同じReactコードからiOS・Androidアプリを生成する。ネイティブプロジェクト、同期手順、必要なIDE、認証リンクの現在の制約は `docs/native-app.md` を参照する。
 
 ## マルチモデル開発CLI
 

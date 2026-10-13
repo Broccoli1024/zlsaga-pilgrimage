@@ -8,12 +8,21 @@
     "build": "tsc -b && tsc -p tsconfig.ai.json && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "mobile:sync": "npm run build && cap sync",
+    "mobile:add:ios": "npm run build && cap add ios",
+    "mobile:add:android": "npm run build && cap add android",
+    "mobile:open:ios": "cap open ios",
+    "mobile:open:android": "cap open android",
     "ai": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/ai/cli.ts",
     "test": "node --test scripts/ai/*.test.ts scripts/*.test.mjs",
     "typecheck": "tsc -b && tsc -p tsconfig.ai.json",
     "lint:ai": "eslint scripts/ai"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@supabase/supabase-js": "^2.108.1",
     "date-fns": "^4.4.0",
     "i18next": "^26.3.1",
@@ -31,6 +40,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.3.1",
     "@types/geojson": "^7946.0.16",
