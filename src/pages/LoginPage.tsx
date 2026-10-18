@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../lib/supabase";
 import LangToggle from "../components/ui/LangToggle";
@@ -8,6 +8,7 @@ import { getAuthRedirectUrl } from "../lib/authRedirect";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +44,7 @@ export default function LoginPage() {
         password,
       });
       if (error) setError(error.message);
-      else navigate("/");
+      else navigate(searchParams.get("next") === "/delete-account" ? "/delete-account" : "/");
     }
     setLoading(false);
   };

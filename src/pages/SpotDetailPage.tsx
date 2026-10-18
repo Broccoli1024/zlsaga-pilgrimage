@@ -1,3 +1,4 @@
+import SpotPhotoGallery from "../components/photos/SpotPhotoGallery";
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -475,287 +476,290 @@ export default function SpotDetailPage() {
           </p>
         )}
 
-        {/* 現地情報 */}
-        {(visitInfo.length > 0 || spot.duration_min) && (
-          <section
-            style={{
-              background: "var(--color-card)",
-              borderRadius: "var(--radius-md)",
-              padding: "var(--space-md) var(--space-lg)",
-              marginBottom: "var(--space-md)",
-              boxShadow: "var(--shadow-sm)",
-              textAlign: "left",
-            }}
-          >
-            <h2
+        <SpotPhotoGallery spotId={spot.id}>
+          {/* 現地情報 */}
+          {(visitInfo.length > 0 || spot.duration_min) && (
+            <section
               style={{
-                margin: "0 0 var(--space-sm)",
-                fontSize: "var(--font-size-md)",
-                color: "var(--color-text-main)",
-                fontWeight: "500",
+                background: "var(--color-card)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-md) var(--space-lg)",
+                marginBottom: "var(--space-md)",
+                boxShadow: "var(--shadow-sm)",
+                textAlign: "left",
               }}
             >
-              {t("detail.visitInfo")}
-            </h2>
-            {visitInfo.map((item) => (
-              <div
-                key={item.label}
+              <h2
                 style={{
-                  padding: "var(--space-sm) 0",
-                  borderBottom: "0.5px solid var(--color-border-light)",
+                  margin: "0 0 var(--space-sm)",
+                  fontSize: "var(--font-size-md)",
+                  color: "var(--color-text-main)",
+                  fontWeight: "500",
                 }}
               >
+                {t("detail.visitInfo")}
+              </h2>
+              {visitInfo.map((item) => (
                 <div
+                  key={item.label}
                   style={{
-                    fontSize: "var(--font-size-xs)",
-                    color: "var(--color-text-muted)",
-                    marginBottom: "2px",
+                    padding: "var(--space-sm) 0",
+                    borderBottom: "0.5px solid var(--color-border-light)",
                   }}
                 >
-                  {item.label}
+                  <div
+                    style={{
+                      fontSize: "var(--font-size-xs)",
+                      color: "var(--color-text-muted)",
+                      marginBottom: "2px",
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "var(--font-size-sm)",
+                      color: "var(--color-text-sub)",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {item.value}
+                  </div>
                 </div>
+              ))}
+              {spot.duration_min && (
+                <p
+                  style={{
+                    fontSize: "var(--font-size-sm)",
+                    color: "var(--color-text-muted)",
+                    margin: "var(--space-sm) 0 0",
+                  }}
+                >
+                  {t("detail.stayTime", { min: spot.duration_min })}
+                </p>
+              )}
+            </section>
+          )}
+
+          {/* 登場キャラクター */}
+          {characters.length > 0 && (
+            <div
+              style={{
+                background: "var(--color-card)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-md) var(--space-lg)",
+                marginBottom: "var(--space-md)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 var(--space-sm)",
+                  fontSize: "var(--font-size-xs)",
+                  fontWeight: "500",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {t("detail.characters")}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "var(--space-xs)",
+                }}
+              >
+                {characters.map((c) => (
+                  <span
+                    key={c.id}
+                    style={{
+                      fontSize: "var(--font-size-xs)",
+                      padding: "3px 10px",
+                      borderRadius: "var(--radius-sm)",
+                      background: c.color_code
+                        ? `${c.color_code}22`
+                        : "var(--color-bg)",
+                      border: `0.5px solid ${c.color_code ?? "var(--color-border)"}`,
+                      color: "var(--color-text-main)",
+                    }}
+                  >
+                    {isEn ? (c.name_en ?? c.name) : c.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 登場エピソード */}
+          {episodes.length > 0 && (
+            <div
+              style={{
+                background: "var(--color-card)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-md) var(--space-lg)",
+                marginBottom: "var(--space-md)",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 var(--space-sm)",
+                  fontSize: "var(--font-size-xs)",
+                  fontWeight: "500",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {t("detail.episodes")}
+              </p>
+              {episodes.map((ep) => (
                 <div
+                  key={ep.id}
                   style={{
                     fontSize: "var(--font-size-sm)",
                     color: "var(--color-text-sub)",
-                    whiteSpace: "pre-wrap",
+                    marginBottom: "var(--space-sm)",
+                    paddingLeft: "var(--space-xs)",
+                    borderLeft: "2px solid var(--color-primary-light)",
                   }}
                 >
-                  {item.value}
+                  <strong style={{ color: "var(--color-primary)" }}>
+                    {seasonLabel(ep.season, ep.media_type, t)}
+                    {ep.media_type !== "movie" &&
+                      ` ${t("detail.episodeNum", { num: ep.episode_number })}`}
+                  </strong>{" "}
+                  {ep.title}
+                  {(isEn ? ep.scene_description_en : ep.scene_description) && (
+                    <div
+                      style={{
+                        color: "var(--color-text-muted)",
+                        fontSize: "var(--font-size-xs)",
+                        marginTop: "2px",
+                      }}
+                    >
+                      {isEn ? ep.scene_description_en : ep.scene_description}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-            {spot.duration_min && (
-              <p
-                style={{
-                  fontSize: "var(--font-size-sm)",
-                  color: "var(--color-text-muted)",
-                  margin: "var(--space-sm) 0 0",
-                }}
-              >
-                {t("detail.stayTime", { min: spot.duration_min })}
-              </p>
-            )}
-          </section>
-        )}
-
-        {/* 登場キャラクター */}
-        {characters.length > 0 && (
-          <div
-            style={{
-              background: "var(--color-card)",
-              borderRadius: "var(--radius-md)",
-              padding: "var(--space-md) var(--space-lg)",
-              marginBottom: "var(--space-md)",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <p
-              style={{
-                margin: "0 0 var(--space-sm)",
-                fontSize: "var(--font-size-xs)",
-                fontWeight: "500",
-                color: "var(--color-text-muted)",
-              }}
-            >
-              {t("detail.characters")}
-            </p>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "var(--space-xs)",
-              }}
-            >
-              {characters.map((c) => (
-                <span
-                  key={c.id}
-                  style={{
-                    fontSize: "var(--font-size-xs)",
-                    padding: "3px 10px",
-                    borderRadius: "var(--radius-sm)",
-                    background: c.color_code
-                      ? `${c.color_code}22`
-                      : "var(--color-bg)",
-                    border: `0.5px solid ${c.color_code ?? "var(--color-border)"}`,
-                    color: "var(--color-text-main)",
-                  }}
-                >
-                  {isEn ? (c.name_en ?? c.name) : c.name}
-                </span>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 登場エピソード */}
-        {episodes.length > 0 && (
+          {/* 地図 */}
           <div
             style={{
-              background: "var(--color-card)",
+              height: "220px",
               borderRadius: "var(--radius-md)",
-              padding: "var(--space-md) var(--space-lg)",
+              overflow: "hidden",
               marginBottom: "var(--space-md)",
-              boxShadow: "var(--shadow-sm)",
+              border: "0.5px solid var(--color-border)",
             }}
           >
-            <p
-              style={{
-                margin: "0 0 var(--space-sm)",
-                fontSize: "var(--font-size-xs)",
-                fontWeight: "500",
-                color: "var(--color-text-muted)",
+            <Map
+              mapboxAccessToken={MAPBOX_TOKEN}
+              initialViewState={{
+                longitude: spot.lng,
+                latitude: spot.lat,
+                zoom: 14,
               }}
+              style={{ width: "100%", height: "100%" }}
+              mapStyle="mapbox://styles/mapbox/streets-v12"
             >
-              {t("detail.episodes")}
-            </p>
-            {episodes.map((ep) => (
-              <div
-                key={ep.id}
-                style={{
-                  fontSize: "var(--font-size-sm)",
-                  color: "var(--color-text-sub)",
-                  marginBottom: "var(--space-sm)",
-                  paddingLeft: "var(--space-xs)",
-                  borderLeft: "2px solid var(--color-primary-light)",
-                }}
-              >
-                <strong style={{ color: "var(--color-primary)" }}>
-                  {seasonLabel(ep.season, ep.media_type, t)}
-                  {ep.media_type !== "movie" &&
-                    ` ${t("detail.episodeNum", { num: ep.episode_number })}`}
-                </strong>{" "}
-                {ep.title}
-                {(isEn ? ep.scene_description_en : ep.scene_description) && (
-                  <div
-                    style={{
-                      color: "var(--color-text-muted)",
-                      fontSize: "var(--font-size-xs)",
-                      marginTop: "2px",
-                    }}
-                  >
-                    {isEn ? ep.scene_description_en : ep.scene_description}
-                  </div>
-                )}
-              </div>
-            ))}
+              <Marker longitude={spot.lng} latitude={spot.lat} anchor="bottom">
+                <div style={{ fontSize: "26px" }}>{isSacred ? "📍" : "🗺️"}</div>
+              </Marker>
+            </Map>
           </div>
-        )}
 
-        {/* 地図 */}
-        <div
-          style={{
-            height: "220px",
-            borderRadius: "var(--radius-md)",
-            overflow: "hidden",
-            marginBottom: "var(--space-md)",
-            border: "0.5px solid var(--color-border)",
-          }}
-        >
-          <Map
-            mapboxAccessToken={MAPBOX_TOKEN}
-            initialViewState={{
-              longitude: spot.lng,
-              latitude: spot.lat,
-              zoom: 14,
+          {/* 地図で見るボタン */}
+          <button
+            onClick={() => navigate(`/?spot=${spot.id}`)}
+            style={{
+              width: "100%",
+              padding: "10px",
+              marginBottom: "var(--space-md)",
+              background: "var(--color-card)",
+              border: "0.5px solid var(--color-border)",
+              borderRadius: "var(--radius-sm)",
+              cursor: "pointer",
+              fontSize: "var(--font-size-sm)",
+              color: "var(--color-text-sub)",
             }}
-            style={{ width: "100%", height: "100%" }}
-            mapStyle="mapbox://styles/mapbox/streets-v12"
           >
-            <Marker longitude={spot.lng} latitude={spot.lat} anchor="bottom">
-              <div style={{ fontSize: "26px" }}>{isSacred ? "📍" : "🗺️"}</div>
-            </Marker>
-          </Map>
-        </div>
+            🗺️ {isEn ? "View on full map" : "地図で見る"}
+          </button>
 
-        {/* 地図で見るボタン */}
-        <button
-          onClick={() => navigate(`/?spot=${spot.id}`)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            marginBottom: "var(--space-md)",
-            background: "var(--color-card)",
-            border: "0.5px solid var(--color-border)",
-            borderRadius: "var(--radius-sm)",
-            cursor: "pointer",
-            fontSize: "var(--font-size-sm)",
-            color: "var(--color-text-sub)",
-          }}
-        >
-          🗺️ {isEn ? "View on full map" : "地図で見る"}
-        </button>
-
-        {/* チェックインボタン */}
-        {user ? (
-          checkedIn ? (
-            <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+          {/* チェックインボタン */}
+          {user ? (
+            checkedIn ? (
+              <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+                <button
+                  onClick={handleToggleFavorite}
+                  style={{
+                    padding: "10px 14px",
+                    cursor: "pointer",
+                    border: "none",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: "var(--font-size-sm)",
+                    background: isFavorite ? "#F5C842" : "var(--color-bg)",
+                    color: isFavorite
+                      ? "var(--color-white)"
+                      : "var(--color-text-sub)",
+                  }}
+                >
+                  {isFavorite
+                    ? `⭐ ${isEn ? "Favorited" : "お気に入り"}`
+                    : `☆ ${isEn ? "Favorite" : "お気に入り"}`}
+                </button>
+                <button
+                  onClick={handleUnCheckin}
+                  disabled={checkingIn}
+                  style={{
+                    flex: 1,
+                    padding: "10px",
+                    cursor: "pointer",
+                    background: "var(--color-error-light)",
+                    color: "var(--color-error)",
+                    border: "0.5px solid var(--color-error)",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: "var(--font-size-sm)",
+                  }}
+                >
+                  {checkingIn
+                    ? t("map.processing")
+                    : `✅ ${t("map.uncheckin")}`}
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={handleToggleFavorite}
-                style={{
-                  padding: "10px 14px",
-                  cursor: "pointer",
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  fontSize: "var(--font-size-sm)",
-                  background: isFavorite ? "#F5C842" : "var(--color-bg)",
-                  color: isFavorite
-                    ? "var(--color-white)"
-                    : "var(--color-text-sub)",
-                }}
-              >
-                {isFavorite
-                  ? `⭐ ${isEn ? "Favorited" : "お気に入り"}`
-                  : `☆ ${isEn ? "Favorite" : "お気に入り"}`}
-              </button>
-              <button
-                onClick={handleUnCheckin}
+                onClick={handleCheckin}
                 disabled={checkingIn}
                 style={{
-                  flex: 1,
+                  width: "100%",
                   padding: "10px",
                   cursor: "pointer",
-                  background: "var(--color-error-light)",
-                  color: "var(--color-error)",
-                  border: "0.5px solid var(--color-error)",
+                  background: "var(--color-primary)",
+                  color: "var(--color-white)",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
-                  fontSize: "var(--font-size-sm)",
+                  fontSize: "var(--font-size-md)",
+                  fontWeight: "500",
                 }}
               >
-                {checkingIn ? t("map.processing") : `✅ ${t("map.uncheckin")}`}
+                {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
               </button>
-            </div>
+            )
           ) : (
-            <button
-              onClick={handleCheckin}
-              disabled={checkingIn}
+            <p
               style={{
-                width: "100%",
-                padding: "10px",
-                cursor: "pointer",
-                background: "var(--color-primary)",
-                color: "var(--color-white)",
-                border: "none",
-                borderRadius: "var(--radius-sm)",
-                fontSize: "var(--font-size-md)",
-                fontWeight: "500",
+                fontSize: "var(--font-size-sm)",
+                color: "var(--color-text-muted)",
+                textAlign: "center",
               }}
             >
-              {checkingIn ? t("map.recording") : `📍 ${t("map.checkin")}`}
-            </button>
-          )
-        ) : (
-          <p
-            style={{
-              fontSize: "var(--font-size-sm)",
-              color: "var(--color-text-muted)",
-              textAlign: "center",
-            }}
-          >
-            {t("map.loginRequired")}
-          </p>
-        )}
-
+              {t("map.loginRequired")}
+            </p>
+          )}
+        </SpotPhotoGallery>
       </div>
     </div>
   );

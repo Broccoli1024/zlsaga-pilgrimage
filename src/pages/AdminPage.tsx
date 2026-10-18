@@ -1,3 +1,5 @@
+import UserReportModeration from "../components/account/UserReportModeration";
+import PhotoModeration from "../components/photos/PhotoModeration";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Papa from "papaparse";
@@ -58,7 +60,7 @@ const contentCompleteness = (spot: Record<string, unknown>) =>
 
 export default function AdminPage() {
   const user = useAuthStore((state) => state.user);
-  const [activeTab, setActiveTab] = useState<"csv" | "forms" | "manage">("csv");
+  const [activeTab, setActiveTab] = useState<"csv" | "forms" | "manage" | "photos">("csv");
 
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [areas, setAreas] = useState<{ id: string; name: string }[]>([]);
@@ -692,6 +694,7 @@ export default function AdminPage() {
             ["csv", "📄 CSV投入"],
             ["forms", "📋 フォーム回答"],
             ["manage", "🛠️ スポット管理"],
+            ["photos", "📷 投稿写真"],
           ] as [typeof activeTab, string][]
         ).map(([key, label]) => (
           <button
@@ -716,6 +719,8 @@ export default function AdminPage() {
           </button>
         ))}
       </div>
+
+      {activeTab === "photos" && <><PhotoModeration /><UserReportModeration /></>}
 
       {activeTab === "csv" && (
         <div>

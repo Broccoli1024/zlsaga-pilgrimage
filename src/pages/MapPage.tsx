@@ -16,6 +16,8 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import type { Spot, SignificanceTag } from "../types";
 import { Link, useSearchParams } from "react-router-dom";
 import SEO from "../components/seo/SEO";
+import SpotPin from "../components/map/SpotPin";
+import { categorySymbols } from "../lib/mapMarker";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const PANEL_WIDTH = 300;
@@ -88,6 +90,11 @@ export default function MapPage() {
   const [checkedInSpots, setCheckedInSpots] = useState<Record<string, boolean>>(
     {},
   );
+  const [showCheckins, setShowCheckins] = useState(() => {
+    try { return localStorage.getItem("pilgrimapp.showCheckins") !== "false"; }
+    catch { return true; }
+  });
+  const [showLegend, setShowLegend] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
@@ -414,22 +421,6 @@ export default function MapPage() {
   };
 
   const filteredSpots = spots.filter(matchesFilter);
-
-  const getMarkerEmoji = (spot: Spot) => {
-    if (routeMode) {
-      if (routeResult) {
-        const idx = routeResult.orderedSpots.findIndex((s) => s.id === spot.id);
-        if (idx !== -1) return `${idx + 1}️⃣`;
-        return "⚪";
-      }
-      const index = selectedForRoute.findIndex((s) => s.id === spot.id);
-      if (index !== -1) return `${index + 1}️⃣`;
-      return "⚪";
-    }
-    if (checkedInSpots[spot.id]) return "⭐";
-    if (spot.id in checkedInSpots) return "✅";
-    return isSpotSacred(spot) ? "📍" : "🗺️";
-  };
 
   // Mapbox Directions APIで移動時間とジオメトリを取得
   // 移動時間とジオメトリを取得（キャッシュ優先）
@@ -1921,32 +1912,21 @@ export default function MapPage() {
 
           {spots.map((spot) => {
             const matched = matchesFilter(spot);
+            const category = categories.find((c) => c.id === spot.category_id);
+            const routeIndex = (routeResult?.orderedSpots ?? selectedForRoute).findIndex((s) => s.id === spot.id);
             return (
-              <Marker
-                key={spot.id}
-                longitude={spot.lng}
-                latitude={spot.lat}
-                anchor="bottom"
-                onClick={(e) => {
-                  e.originalEvent.stopPropagation();
-                  if (!matched) return; // フィルタ非一致は操作不可
-                  if (routeMode) {
-                    if (!routeResult) handleMarkerClickForRoute(spot);
-                  } else {
-                    setSelectedSpot(spot);
-                  }
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "18px",
-                    cursor: matched ? "pointer" : "default",
-                    filter: "drop-shadow(0 1px 1.5px rgba(0,0,0,0.3))",
-                    opacity: matched ? 1 : 0.25,
-                  }}
-                >
-                  {getMarkerEmoji(spot)}
-                </div>
+              <Marker key={spot.id} longitude={spot.lng} latitude={spot.lat} anchor="bottom">
+                <SpotPin name={isEn ? (spot.name_en ?? spot.name) : spot.name}
+                  categoryName={category?.name ?? ""}
+                  categoryLabel={(isEn ? (category?.name_en ?? category?.name) : category?.name) ?? (isEn ? "Other" : "その他")}
+                  sacred={isSpotSacred(spot)} manhole={getSpotTagNames(spot).includes("マンホール")} checkedIn={!!user && spot.id in checkedInSpots}
+                  favorite={checkedInSpots[spot.id] ?? false} showCheckins={showCheckins}
+                  routeMode={routeMode} routeIndex={routeIndex} matched={matched}
+                  selected={routeMode ? routeIndex >= 0 : selectedSpot?.id === spot.id}
+                  onClick={() => {
+                    if (routeMode) { if (!routeResult) handleMarkerClickForRoute(spot); }
+                    else setSelectedSpot(spot);
+                  }} />
               </Marker>
             );
           })}
@@ -1955,9 +1935,10 @@ export default function MapPage() {
             <Popup
               longitude={selectedSpot.lng}
               latitude={selectedSpot.lat}
-              anchor="top"
+              className="spot-map-popup"
+              offset={20}
               onClose={() => setSelectedSpot(null)}
-              maxWidth="300px"
+              maxWidth="min(260px, calc(100vw - 40px))"
             >
               <SpotDetailPopup
                 spot={selectedSpot}
@@ -1989,6 +1970,23 @@ export default function MapPage() {
             </Popup>
           )}
         </Map>
+        <div className="map-display-controls">
+          <button type="button" aria-pressed={showCheckins} onClick={() => {
+            const next = !showCheckins;
+            setShowCheckins(next);
+            try { localStorage.setItem("pilgrimapp.showCheckins", String(next)); } catch { /* Preference works without storage. */ }
+          }}>{isEn ? "Check-in marks" : "チェックイン表示"} {showCheckins ? "ON" : "OFF"}</button>
+          <button type="button" aria-expanded={showLegend} aria-controls="map-pin-legend" onClick={() => setShowLegend(!showLegend)}>
+            {isEn ? "Pin guide" : "ピンの凡例"} {showLegend ? "−" : "+"}
+          </button>
+          {showLegend && <div id="map-pin-legend" className="map-pin-legend">
+            <p>{isEn ? "Purple: manhole / Rose: pilgrimage spot / Teal: other spot" : "紫：マンホール ／ 赤：聖地 ／ 青緑：その他のスポット"}</p>
+            {categories.filter((category, index, all) => all.findIndex((c) => c.name === category.name) === index).map((category) => (
+              <div key={category.id}><span aria-hidden="true">{categorySymbols[category.name] ?? "📍"}</span> {isEn ? (category.name_en ?? category.name) : category.name}</div>
+            ))}
+            <p>{isEn ? "✓ Visited · ★ Favorite · Numbers: route order" : "✓ チェックイン済み・★ お気に入り・数字：ルート順"}</p>
+          </div>}
+        </div>
         {/* 候補選択モーダル */}
         {editingLegIndex !== null && (
           <div

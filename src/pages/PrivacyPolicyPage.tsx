@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import type { CSSProperties } from "react";
 import StaticPageLayout from "../components/layout/StaticPageLayout";
 import SEO from "../components/seo/SEO";
@@ -39,7 +40,9 @@ export default function PrivacyPolicyPage({
         </p>
         <ul style={listStyle}>
           <li>メールアドレス（アカウント登録・認証のため）</li>
-          <li>パスワード（暗号化された状態で保存されます）</li>
+          <li>パスワード（認証基盤がハッシュ化して管理します）</li>
+          <li>投稿写真・説明文・プロフィール画像、投稿日時・審査状態</li>
+          <li>投稿者のブロック設定、写真・投稿者への通報内容</li>
           <li>
             スポットのチェックイン履歴、訪問記録、作成したルートなど、本アプリの利用によって生成される情報
           </li>
@@ -55,6 +58,7 @@ export default function PrivacyPolicyPage({
         <ul style={listStyle}>
           <li>アカウントの認証およびログイン状態の維持</li>
           <li>チェックイン履歴・訪問記録・ルート等の保存および表示</li>
+          <li>写真の審査・公開、不適切な投稿への対応、ブロック設定の反映</li>
           <li>本アプリの機能改善、不具合対応</li>
           <li>利用者からのお問い合わせへの対応</li>
         </ul>
@@ -80,8 +84,11 @@ export default function PrivacyPolicyPage({
 
         <h2 style={headingStyle}>4. データの保存・管理</h2>
         <p style={paragraphStyle}>
-          取得した情報は、適切な安全管理措置を講じたうえで保存・管理します。ただし、現時点ではアカウントおよびデータの削除（退会）機能は実装されていません。データの削除をご希望の場合は、下記のお問い合わせ窓口までご連絡ください。今後、アプリ内から退会・データ削除を行える機能を追加する予定です。
+          取得した情報は、適切な安全管理措置を講じたうえで保存・管理します。投稿写真は確認後に公開され、写真に付く投稿者の識別表示を通じて通報・ブロックできます。投稿フォームでは画像を縮小・再変換し、元の位置情報等のメタデータを送信しません。画像に写り込んだ人物・車のナンバー等は自動で除去されません。
         </p>
+
+        <p style={paragraphStyle}>アカウントおよび関連データは、マイページまたは<Link to="/delete-account">アカウント削除ページ</Link>から削除できます。プロフィール・写真・チェックイン・訪問履歴・保存ルート・ブロック設定・関連する通報と利用記録を削除します。削除中にエラーが発生した場合は、同じ画面から再試行してください。ログインできない場合はお問い合わせ窓口から削除を申請できます。</p>
+        <p style={paragraphStyle}>削除完了後はサービス上の対象データを保持しません。配信済み画像のキャッシュや閲覧者が保存したコピーは即時に回収できない場合があります。外部サービスの障害復旧用バックアップは、そのサービスの保持設定に従って扱われます。</p>
 
         <h2 style={headingStyle}>5. 情報の開示・訂正・削除</h2>
         <p style={paragraphStyle}>

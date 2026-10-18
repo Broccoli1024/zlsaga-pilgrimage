@@ -1,3 +1,4 @@
+import DeleteAccountPage from "./pages/DeleteAccountPage";
 import { useEffect, useState } from "react";
 import {
   BrowserRouter,
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route path="/routes/new" element={<RouteNewPage />} />
         <Route path="/routes/:id" element={<RouteResultPage />} />
         <Route path="/mypage" element={<MyPage />} />
+        <Route path="/delete-account" element={<DeleteAccountPage onMenuOpen={() => setIsMenuOpen(true)} />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/admin" element={<AdminPage />} />

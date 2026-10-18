@@ -105,7 +105,8 @@
     "faq": "FAQ",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
-    "license": "License"
+    "license": "License",
+    "deleteAccount": "Delete account"
   },
   "app": {
     "title": "Zombie Land Saga Pilgrimage"

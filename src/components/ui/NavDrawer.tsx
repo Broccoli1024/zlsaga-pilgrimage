@@ -25,6 +25,7 @@ const MENU_ITEMS: MenuItem[] = [
   },
   { icon: "❓", labelKey: "nav.faq", to: "/faq" },
   { icon: "🔒", labelKey: "nav.privacy", to: "/privacy" },
+  { icon: "👤", labelKey: "nav.deleteAccount", to: "/delete-account" },
   { icon: "📜", labelKey: "nav.terms", to: "/terms" },
   { icon: "ℹ️", labelKey: "nav.license", to: "/license" },
 ];
