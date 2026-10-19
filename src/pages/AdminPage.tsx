@@ -1,3 +1,4 @@
+import AdminMfaGate from "../components/account/AdminMfaGate";
 import UserReportModeration from "../components/account/UserReportModeration";
 import PhotoModeration from "../components/photos/PhotoModeration";
 import { useEffect, useState } from "react";
@@ -105,23 +106,25 @@ export default function AdminPage() {
   const [adminAccess, setAdminAccess] = useState<{
     userId: string;
     allowed: boolean;
+    member: boolean;
     failed: boolean;
   } | null>(null);
   const userId = user?.id;
+  const [accessRevision, setAccessRevision] = useState(0);
   useEffect(() => {
     if (!userId) return;
     let active = true;
     const check = async () => {
       try {
-        const { data, error } = await supabase.rpc("is_admin");
-        if (active) setAdminAccess({ userId, allowed: !error && data === true, failed: !!error });
+        const [access, membership] = await Promise.all([supabase.rpc("is_admin"), supabase.rpc("is_admin_member")]);
+        if (active) setAdminAccess({ userId, allowed: !access.error && access.data === true, member: !membership.error && membership.data === true, failed: !!access.error || !!membership.error });
       } catch {
-        if (active) setAdminAccess({ userId, allowed: false, failed: true });
+        if (active) setAdminAccess({ userId, allowed: false, member: false, failed: true });
       }
     };
     void check();
     return () => { active = false; };
-  }, [userId]);
+  }, [userId, accessRevision]);
   const isAdmin = adminAccess?.userId === userId && adminAccess?.allowed === true;
 
   const loadMasters = async () => {
@@ -692,6 +695,10 @@ export default function AdminPage() {
 
   if (adminAccess?.userId !== userId) {
     return <p role="status" style={{ padding: "2rem" }}>管理者権限を確認中…</p>;
+  }
+
+  if (!isAdmin && adminAccess?.member && !adminAccess.failed) {
+    return <AdminMfaGate key={userId} onVerified={() => setAccessRevision((r) => r + 1)} />;
   }
 
   if (!isAdmin) {

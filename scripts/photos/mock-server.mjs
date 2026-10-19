@@ -126,7 +126,7 @@ http
       for (const p of body.prefixes ?? []) files.delete(p);
       return send([]);
     }
-    if (path.endsWith("/rpc/is_admin")) return send(true);
+    if ((path.endsWith("/rpc/is_admin") || path.endsWith("/rpc/is_admin_member"))) return send(true);
     if (path.includes("/rpc/reserve_spot_photo")) {
       const id = randomUUID();
       const p = {
