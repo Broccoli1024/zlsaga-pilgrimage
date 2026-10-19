@@ -6,7 +6,7 @@ import type { SpotPhoto } from "../../lib/spotPhotos";
 export default function PhotoModeration() {
   const [photos, setPhotos] = useState<SpotPhoto[]>([]);
   const [reports, setReports] = useState<
-    { photo_id: string; reason: string }[]
+    { photo_id: string; user_id: string; reason: string }[]
   >([]);
   const [filter, setFilter] = useState("pending");
   const [page, setPage] = useState(0);
@@ -31,7 +31,8 @@ export default function PhotoModeration() {
         const flags = rows.length
           ? await supabase
               .from("spot_photo_reports")
-              .select("photo_id,reason")
+              .select("photo_id,user_id,reason")
+              .is("resolved_at", null)
               .in(
                 "photo_id",
                 rows.map((p) => p.id),
@@ -82,6 +83,22 @@ export default function PhotoModeration() {
       setBusy(false);
     }
   };
+  const resolveReport = async (photoId: string, reporter: string) => {
+    setBusy(true);
+    setError("");
+    try {
+      const { error: err } = await supabase.rpc("resolve_spot_photo_report", {
+        target_photo: photoId,
+        reporter,
+      });
+      if (err) throw err;
+      setRevision((r) => r + 1);
+    } catch {
+      setError("通報を更新できませんでした。もう一度お試しください。");
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <section className="spot-photos">
       <h2>投稿写真の管理</h2>
@@ -127,10 +144,16 @@ export default function PhotoModeration() {
             <Link to={`/spots/${photo.spot_id}`}>スポット情報</Link>
             {reports
               .filter((r) => r.photo_id === photo.id)
-              .map((r, i) => (
-                <p className="photo-report-reason" key={i}>
-                  通報：{r.reason}
-                </p>
+              .map((r) => (
+                <div key={r.user_id}>
+                  <p className="photo-report-reason">通報：{r.reason}</p>
+                  <button
+                    disabled={busy}
+                    onClick={() => resolveReport(r.photo_id, r.user_id)}
+                  >
+                    確認済みにする（写真はそのまま）
+                  </button>
+                </div>
               ))}
             <div className="spot-photo-actions">
               {photo.status !== "approved" && photo.status !== "uploading" && (
