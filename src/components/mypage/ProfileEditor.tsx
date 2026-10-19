@@ -3,6 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import { useTranslation } from "react-i18next";
 import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../stores/authStore";
+import { compressProfileImage } from "../../lib/photoImage";
 
 interface ProfileEditorProps {
   user: User;
@@ -44,14 +45,15 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const filePath = `${user.id}/icon.${ext}`;
+      const image = await compressProfileImage(file);
+      const filePath = `${user.id}/icon.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("profile-icons")
-        .upload(filePath, file, {
+        .upload(filePath, image, {
           upsert: true,
           cacheControl: "3600",
+          contentType: "image/jpeg",
         });
 
       if (uploadError) {
@@ -73,6 +75,10 @@ export default function ProfileEditor({ user }: ProfileEditorProps) {
       if (updateError) {
         setError(t("profile.profileUpdateFailed", { message: updateError }));
       }
+    } catch (error) {
+      setError(t("profile.uploadFailed", {
+        message: error instanceof Error ? error.message : t("profile.invalidImageType"),
+      }));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

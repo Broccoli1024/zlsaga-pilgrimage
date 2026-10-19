@@ -25,6 +25,18 @@ export function validatePhotoFiles(files: Pick<File, "size" | "type">[]) {
 }
 export async function compressPhoto(file: File): Promise<Blob> {
   validatePhotoFiles([file]);
+  return encodeImage(file);
+}
+export async function compressProfileImage(file: File): Promise<Blob> {
+  if (
+    !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type) ||
+    file.size <= 0 || file.size > 5 * 1024 * 1024
+  ) {
+    throw new Error("5MB以下のJPEG・PNG・WebP・GIFを選択してください。 / Use JPEG, PNG, WebP or GIF up to 5 MB.");
+  }
+  return encodeImage(file);
+}
+async function encodeImage(file: File): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   try {
     if (bitmap.width * bitmap.height > 60_000_000)
