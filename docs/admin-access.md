@@ -1,0 +1,15 @@
+# 管理者権限
+
+管理者は public.admin_memberships の user_id で管理する。一般ユーザー・匿名ユーザーには一覧閲覧と変更の権限を与えない。管理者の追加・削除は信頼できるDB管理者またはservice roleだけが実行する。
+
+- is_admin() は呼出元の auth.uid() と確認済みアカウントの所属を確認する。対象UIDを引数で受け取らない。
+- 写真のRLS・管理RPCは既存の is_photo_admin() を経由して同じ判定を使用する。
+- 管理画面と manage-spot / insert-spot / fetch-form-responses は is_admin() を使用する。Edge FunctionはgetUserで本人確認してから、本人のJWTでRPCを実行する。失敗時は拒否する。
+- メール変更は権限に影響しない。退会で権限はFK cascadeにより消え、同じメールで再登録しても権限は復活しない。
+- 移行時に旧判定で管理者だった確認済みアカウントだけを引き継ぐ。1件でなければ移行全体を中止する。
+- 先にDB移行、次に3つのEdge Function、最後にWebを公開する。既存の画面と写真APIは移行中も互換性を保つ。
+- 権限の剥奪は次のサーバー/DB操作から有効。開いたままの画面は再読み込みで反映される。
+- 二段階認証と運営専用アカウントへの移行は未実施。別アカウントへ移す際は新アカウントの動作確認後に旧権限を外す。
+- 過去のSQLマイグレーションとGit履歴は書き換えない。過去に含まれたアドレスを非公開化したことにはならない。旧Android APK内の文字列はアプリ更新まで残る。
+
+検証: npm test、scripts/photos/check-db.mjs（ローカルPGlite）、Webビルド、変更したEdge Functionのdeno check。

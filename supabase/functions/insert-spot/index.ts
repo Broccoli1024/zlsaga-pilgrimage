@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const ADMIN_EMAILS = ["rikurin2016@gmail.com"];
+import { authorizeAdmin } from "../_shared/admin.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,14 +21,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
-    const { data: userData, error: userError } = await supabaseAuthClient.auth
-      .getUser();
-
-    if (
-      userError ||
-      !userData.user?.email ||
-      !ADMIN_EMAILS.includes(userData.user.email)
-    ) {
+    const allowed = await authorizeAdmin(
+      async () => {
+        const { data, error } = await supabaseAuthClient.auth.getUser();
+        return !error && !!data.user;
+      },
+      () => supabaseAuthClient.rpc("is_admin"),
+    );
+    if (!allowed) {
       return new Response(JSON.stringify({ error: "権限がありません" }), {
         status: 403,
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },

@@ -1,12 +1,11 @@
 import UserReportModeration from "../components/account/UserReportModeration";
 import PhotoModeration from "../components/photos/PhotoModeration";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Papa from "papaparse";
 import { useAuthStore } from "../stores/authStore";
 import { supabase } from "../lib/supabase";
 
-const ADMIN_EMAILS = ["rikurin2016@gmail.com"];
 const WORK_ID = "00000000-0000-0000-0000-000000000001";
 
 interface CsvRow {
@@ -103,7 +102,27 @@ export default function AdminPage() {
     }[]
   >([]);
 
-  const isAdmin = !!user?.email && ADMIN_EMAILS.includes(user.email);
+  const [adminAccess, setAdminAccess] = useState<{
+    userId: string;
+    allowed: boolean;
+    failed: boolean;
+  } | null>(null);
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    const check = async () => {
+      try {
+        const { data, error } = await supabase.rpc("is_admin");
+        if (active) setAdminAccess({ userId, allowed: !error && data === true, failed: !!error });
+      } catch {
+        if (active) setAdminAccess({ userId, allowed: false, failed: true });
+      }
+    };
+    void check();
+    return () => { active = false; };
+  }, [userId]);
+  const isAdmin = adminAccess?.userId === userId && adminAccess?.allowed === true;
 
   const loadMasters = async () => {
     const [areasRes, categoriesRes, tagsRes] = await Promise.all([
@@ -671,10 +690,14 @@ export default function AdminPage() {
     );
   }
 
+  if (adminAccess?.userId !== userId) {
+    return <p role="status" style={{ padding: "2rem" }}>管理者権限を確認中…</p>;
+  }
+
   if (!isAdmin) {
     return (
       <div style={{ padding: "2rem", textAlign: "center" }}>
-        <p>このページへのアクセス権限がありません</p>
+        <p>{adminAccess?.failed ? "管理者権限を確認できませんでした。ページを再読み込みしてください。" : "このページへのアクセス権限がありません"}</p>
         <Link to="/">地図に戻る</Link>
       </div>
     );

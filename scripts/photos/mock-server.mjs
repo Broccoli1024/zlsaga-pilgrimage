@@ -15,7 +15,7 @@ const spot = {
 };
 const user = {
   id: "f3333333-3333-4333-8333-333333333333",
-  email: "rikurin2016@gmail.com",
+  email: "admin@example.invalid",
   role: "authenticated",
   aud: "authenticated",
   user_metadata: {},
@@ -126,6 +126,7 @@ http
       for (const p of body.prefixes ?? []) files.delete(p);
       return send([]);
     }
+    if (path.endsWith("/rpc/is_admin")) return send(true);
     if (path.includes("/rpc/reserve_spot_photo")) {
       const id = randomUUID();
       const p = {
