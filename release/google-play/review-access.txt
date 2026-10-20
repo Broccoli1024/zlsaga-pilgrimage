@@ -1,0 +1,22 @@
+App access: Some functionality is restricted by sign-in.
+
+Use a dedicated ordinary-user account. Enter its email and password only in
+the Play Console app access credential fields, not in this file or Git.
+
+Reviewer instructions:
+Open the navigation menu and select Login. Sign in using the supplied review
+account. The map and published spot details are accessible without signing in.
+After signing in, you can record visits, save routes, and submit photos from
+the bottom of a spot detail page. Photos are pending until the operator approves
+them. Published photos can be reported and their authors can be blocked.
+Blocked authors can be managed in My Page. Account deletion is also available
+in My Page, and information is available at https://pilgrimapp.jp/delete-account.
+No purchase is required. The account does not require an authenticator code.
+The administrator page is a separate operator-only tool; it is not a consumer
+feature, and the review account has no administrator privileges.
+
+Before submission:
+- Confirm the review email and verify login in the actual Android release.
+- Keep the account active and available during review.
+- Use a separate account when testing deletion so review credentials remain valid.
+- Do not put personal photos, personal visit history, or admin permissions here.

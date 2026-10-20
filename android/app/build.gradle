@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+// Keep the upload key and passwords outside the repository.
+def signingValues = ['PILGRIM_UPLOAD_STORE_FILE', 'PILGRIM_UPLOAD_STORE_PASSWORD',
+                     'PILGRIM_UPLOAD_KEY_ALIAS', 'PILGRIM_UPLOAD_KEY_PASSWORD']
+def hasReleaseSigning = signingValues.every { System.getenv(it)?.trim() }
+
 android {
     namespace = "jp.pilgrimapp"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,11 +21,30 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(System.getenv('PILGRIM_UPLOAD_STORE_FILE'))
+                storePassword System.getenv('PILGRIM_UPLOAD_STORE_PASSWORD')
+                keyAlias System.getenv('PILGRIM_UPLOAD_KEY_ALIAS')
+                keyPassword System.getenv('PILGRIM_UPLOAD_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasReleaseSigning) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (!hasReleaseSigning && graph.allTasks.any {
+        it.project == project && it.name in ['bundleRelease', 'assembleRelease', 'packageRelease']
+    }) {
+        throw new GradleException('Release signing is missing. Load the private PILGRIM_UPLOAD_* environment variables.')
     }
 }
 
